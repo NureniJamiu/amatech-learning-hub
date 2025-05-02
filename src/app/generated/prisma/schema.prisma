@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  firstname  String
+  lastname   String
+  level      String
+  email      String   @unique
+  role       Role     @default(STUDENT)
+  password   String
+  profileImg String?
+  bio        String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  CourseMaterial CourseMaterial[]
+  pastQuestion   PastQuestion[]
+  Bookmark       Bookmark[]
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  courseCode  String
+  courseTitle String
+  level       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  CourseMaterial CourseMaterial[]
+  pastQuestion   PastQuestion[]
+  Bookmark       Bookmark[]
+}
+
+model CourseMaterial {
+  id        String   @id @default(uuid())
+  fileUrl   String
+  status    Status   @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploaderID User   @relation(fields: [userId], references: [id])
+  courseID   Course @relation(fields: [courseId], references: [id])
+
+  userId   String
+  courseId String
+}
+
+model PastQuestion {
+  id        String   @id @default(uuid())
+  fileUrl   String
+  status    Status   @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploader User   @relation(fields: [userId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id]) // to Course
+
+  userId   String
+  courseId String
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  userId   String
+  courseId String
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}

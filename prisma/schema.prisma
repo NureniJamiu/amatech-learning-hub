@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output = "../generated/prisma"
+  output   = "../src/app/generated/prisma"
 }
 
 datasource db {
@@ -12,15 +12,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  firstname String
-  lastname  String
-  level     String
-  email     String   @unique
-  role      Role     @default(STUDENT)
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  firstname  String
+  lastname   String
+  level      String
+  email      String   @unique
+  role       Role     @default(STUDENT)
+  password   String
+  profileImg String?
+  bio        String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   CourseMaterial CourseMaterial[]
   pastQuestion   PastQuestion[]
@@ -48,7 +50,7 @@ model CourseMaterial {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  uploaderID User   @relation(fields: [userId], references: [id]) 
+  uploaderID User   @relation(fields: [userId], references: [id])
   courseID   Course @relation(fields: [courseId], references: [id])
 
   userId   String
