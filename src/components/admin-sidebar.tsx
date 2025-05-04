@@ -9,6 +9,7 @@ import {
   Shield,
 } from "lucide-react";
 
+import { useAppContext } from "@/context/app-context";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -18,13 +19,15 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AdminSidebar() {
+  const { activeAdminSection, setActiveAdminSection } = useAppContext();
+
   const adminMenuItems = [
-    { id: "admin-1", title: "User Management", icon: Users },
-    { id: "admin-2", title: "Course Management", icon: BookOpen },
-    { id: "admin-3", title: "Content Management", icon: FileText },
-    { id: "admin-4", title: "Analytics", icon: BarChart3 },
-    { id: "admin-5", title: "System Settings", icon: Settings },
-    { id: "admin-6", title: "Permissions", icon: Shield },
+    { id: "users", title: "User Management", icon: Users },
+    { id: "courses", title: "Course Management", icon: BookOpen },
+    { id: "content", title: "Content Management", icon: FileText },
+    { id: "analytics", title: "Analytics", icon: BarChart3 },
+    { id: "settings", title: "System Settings", icon: Settings },
+    { id: "permissions", title: "Permissions", icon: Shield },
   ];
 
   return (
@@ -34,7 +37,10 @@ export function AdminSidebar() {
         <SidebarMenu>
           {adminMenuItems.map((item) => (
             <SidebarMenuItem key={item.id}>
-              <SidebarMenuButton>
+              <SidebarMenuButton
+                isActive={activeAdminSection === item.id}
+                onClick={() => setActiveAdminSection(item.id)}
+              >
                 <item.icon className="h-4 w-4" />
                 <span>{item.title}</span>
               </SidebarMenuButton>

@@ -23,6 +23,8 @@ type AppContextType = {
   isAdminMode: boolean;
   setIsAdminMode: (isAdmin: boolean) => void;
   currentUser: typeof currentUser;
+  activeAdminSection: string;
+  setActiveAdminSection: (section: string) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -35,6 +37,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     currentUser.currentSemester
   );
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [activeAdminSection, setActiveAdminSection] = useState("users");
 
   // Get all available levels from courses
   const availableLevels = [
@@ -63,6 +66,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isAdminMode,
         setIsAdminMode,
         currentUser,
+        activeAdminSection,
+        setActiveAdminSection,
       }}
     >
       {children}
