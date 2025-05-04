@@ -50,84 +50,82 @@ export function CourseContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {selectedCourse.materials.length === 0 ? (
-                <p className="text-muted-foreground">
-                  No materials available for this course.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedCourse.materials.map((material) => (
-                    <div
-                      key={material.id}
-                      className="flex items-center justify-between py-2 border-b last:border-0"
-                    >
-                      <span className="text-red-500">{material.title}</span>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-500"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Open
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-500"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
+              <div>
+                {selectedCourse.materials.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No materials available for this course.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedCourse.materials.map((material) => (
+                      <div
+                        key={material.id}
+                        className="flex items-center justify-between py-2 border-b last:border-0"
+                      >
+                        <span className="text-red-500">{material.title}</span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-500"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Open
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-500"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          <Card className="mt-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl">
+              <h3 className="mt-16 mb-5 text-xl font-semibold">
                 Available Past Questions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedCourse.pastQuestions.length === 0 ? (
-                <p className="text-muted-foreground">
-                  No past questions available for this course.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedCourse.pastQuestions.map((pastQuestion) => (
-                    <div
-                      key={pastQuestion.id}
-                      className="flex items-center justify-between py-2 border-b last:border-0"
-                    >
-                      <span>{pastQuestion.title}</span>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-500"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Open
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-500"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
+              </h3>
+              <div>
+                {selectedCourse.pastQuestions.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    No past questions available for this course.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedCourse.pastQuestions.map((pastQuestion) => (
+                      <div
+                        key={pastQuestion.id}
+                        className="flex items-center justify-between py-2 border-b last:border-0"
+                      >
+                        <span>{pastQuestion.title}</span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-500"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Open
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-500"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
