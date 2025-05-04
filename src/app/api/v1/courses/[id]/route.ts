@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/utils/prisma";
 
 // START FROM HERE WHEN NEXT YOU WANT TO WORK ON THIS PROJECT
 export async function GET(

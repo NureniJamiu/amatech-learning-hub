@@ -1,4 +1,4 @@
-import { verifyAuthToken } from "@/lib/token";
+import { verifyAuthToken } from "@/utils/token";
 import { NextRequest } from "next/server";
 
 export const authenticateRequest = (
