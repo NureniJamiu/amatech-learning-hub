@@ -124,7 +124,7 @@ export function AIAssistantView() {
                   }`}
                 >
                   <div
-                    className={`flex max-w-[80%] items-start gap-2 rounded-lg p-3 ${
+                    className={`flex max-w-[80%] items-start gap-2 rounded p-3 ${
                       msg.sender === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"

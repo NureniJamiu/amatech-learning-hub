@@ -222,7 +222,7 @@ export function ContentManagement() {
                   <Input placeholder="Search materials..." className="pl-8" />
                 </div>
               </div>
-              <div className="rounded-md border">
+              <div className="rounded border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -280,7 +280,7 @@ export function ContentManagement() {
                   />
                 </div>
               </div>
-              <div className="rounded-md border">
+              <div className="rounded border">
                 <Table>
                   <TableHeader>
                     <TableRow>

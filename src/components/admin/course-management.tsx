@@ -47,9 +47,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+  type Option,
+} from "@/components/ui/multi-select";
 
 export function CourseManagement() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTutors, setSelectedTutors] = useState<string[]>([]);
+
+  // Mock tutors for the multi-select
+  const tutors: Option[] = [
+    { value: "1", label: "Dr. Adebayo Johnson" },
+    { value: "2", label: "Prof. Sarah Williams" },
+    { value: "3", label: "Dr. Emmanuel Oladele" },
+  ];
 
   const filteredCourses = courses.filter(
     (course) =>
@@ -145,6 +161,32 @@ export function CourseManagement() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="tutors" className="text-right">
+                    Tutors
+                  </Label>
+                  <div className="col-span-3">
+                    <MultiSelect
+                      options={tutors}
+                      selected={selectedTutors}
+                      onValueChange={setSelectedTutors}
+                    >
+                      <MultiSelectTrigger>
+                        <MultiSelectValue placeholder="Select tutors" />
+                      </MultiSelectTrigger>
+                      <MultiSelectContent>
+                        {tutors.map((tutor) => (
+                          <MultiSelectItem
+                            key={tutor.value}
+                            value={tutor.value}
+                          >
+                            {tutor.label}
+                          </MultiSelectItem>
+                        ))}
+                      </MultiSelectContent>
+                    </MultiSelect>
+                  </div>
+                </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label htmlFor="description" className="text-right pt-2">
                     Description
@@ -170,7 +212,7 @@ export function CourseManagement() {
               />
             </div>
           </div>
-          <div className="rounded-md border">
+          <div className="rounded border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -179,7 +221,7 @@ export function CourseManagement() {
                   <TableHead>Units</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Semester</TableHead>
-                  <TableHead>Materials</TableHead>
+                  <TableHead>Tutors</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -191,7 +233,24 @@ export function CourseManagement() {
                     <TableCell>{course.units}</TableCell>
                     <TableCell>{course.level}</TableCell>
                     <TableCell>{course.semester}</TableCell>
-                    <TableCell>{course.materials.length}</TableCell>
+                    <TableCell>
+                      {course.tutors.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {course.tutors.map((tutor) => (
+                            <span
+                              key={tutor.id}
+                              className="inline-flex items-center rounded border px-2.5 py-0.5 text-xs font-semibold"
+                            >
+                              {tutor.name.split(" ")[0]}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          None
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

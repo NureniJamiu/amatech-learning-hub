@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Edit, MoreHorizontal, Search, Trash2, UserPlus } from "lucide-react";
+import {
+  Edit,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,66 +45,40 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function UserManagement() {
+export function TutorManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock user data
-  const users = [
+  // Mock tutor data
+  const tutors = [
     {
       id: "1",
-      name: "Nureni Jamiu",
-      email: "nurenijamiu@gmail.com",
-      role: "Admin",
-      level: 300,
-      department: "Mechanical Engineering",
+      name: "Dr. Adebayo Johnson",
+      email: "adebayo@university.edu",
+      avatar: "/placeholder.svg?height=40&width=40",
+      courses: ["MTE 303", "MTE 401"],
     },
     {
       id: "2",
-      name: "John Doe",
-      email: "johndoe@gmail.com",
-      role: "Student",
-      level: 200,
-      department: "Computer Science",
+      name: "Prof. Sarah Williams",
+      email: "sarah.williams@university.edu",
+      avatar: "/placeholder.svg?height=40&width=40",
+      courses: ["MTE 201", "MTE 305"],
     },
     {
       id: "3",
-      name: "Jane Smith",
-      email: "janesmith@gmail.com",
-      role: "Student",
-      level: 400,
-      department: "Electrical Engineering",
-    },
-    {
-      id: "4",
-      name: "Robert Johnson",
-      email: "robert@gmail.com",
-      role: "Lecturer",
-      level: null,
-      department: "Mechanical Engineering",
-    },
-    {
-      id: "5",
-      name: "Sarah Williams",
-      email: "sarah@gmail.com",
-      role: "Student",
-      level: 300,
-      department: "Civil Engineering",
+      name: "Dr. Emmanuel Oladele",
+      email: "emmanuel@university.edu",
+      avatar: null,
+      courses: ["MTE 307"],
     },
   ];
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.department.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTutors = tutors.filter(
+    (tutor) =>
+      tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tutor.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -106,22 +87,24 @@ export function UserManagement() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle className="text-2xl font-bold">
-              User Management
+              Tutor Management
             </CardTitle>
-            <CardDescription>Manage all users in the system</CardDescription>
+            <CardDescription>
+              Manage course tutors and lecturers
+            </CardDescription>
           </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add User
+                Add Tutor
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Add New User</DialogTitle>
+                <DialogTitle>Add New Tutor</DialogTitle>
                 <DialogDescription>
-                  Create a new user account. Click save when you're done.
+                  Create a new tutor profile. Click save when you're done.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -129,55 +112,37 @@ export function UserManagement() {
                   <Label htmlFor="name" className="text-right">
                     Name
                   </Label>
-                  <Input id="name" className="col-span-3" />
+                  <Input
+                    id="name"
+                    placeholder="Dr. John Doe"
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="email" className="text-right">
                     Email
                   </Label>
-                  <Input id="email" className="col-span-3" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john.doe@university.edu"
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">
-                    Role
+                  <Label htmlFor="avatar" className="text-right">
+                    Profile Image
                   </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="lecturer">Lecturer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="department" className="text-right">
-                    Department
-                  </Label>
-                  <Input id="department" className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="level" className="text-right">
-                    Level
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="200">200</SelectItem>
-                      <SelectItem value="300">300</SelectItem>
-                      <SelectItem value="400">400</SelectItem>
-                      <SelectItem value="500">500</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    className="col-span-3"
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Save User</Button>
+                <Button type="submit">Save Tutor</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -187,7 +152,7 @@ export function UserManagement() {
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search tutors..."
                 className="pl-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -198,22 +163,45 @@ export function UserManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Tutor</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Assigned Courses</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>{user.level || "N/A"}</TableCell>
-                    <TableCell>{user.department}</TableCell>
+                {filteredTutors.map((tutor) => (
+                  <TableRow key={tutor.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          {tutor.avatar ? (
+                            <AvatarImage
+                              src={tutor.avatar || "/placeholder.svg"}
+                              alt={tutor.name}
+                            />
+                          ) : (
+                            <AvatarFallback>
+                              {tutor.name.charAt(0)}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <span className="font-medium">{tutor.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{tutor.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {tutor.courses.map((course) => (
+                          <span
+                            key={course}
+                            className="inline-flex items-center rounded border px-2.5 py-0.5 text-xs font-semibold"
+                          >
+                            {course}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -226,12 +214,16 @@ export function UserManagement() {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            Edit Tutor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Assign Course
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            Delete Tutor
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

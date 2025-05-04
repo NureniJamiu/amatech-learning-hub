@@ -7,6 +7,7 @@ import {
   BookOpen,
   BarChart3,
   Shield,
+  UserCog,
 } from "lucide-react";
 
 import { useAppContext } from "@/context/app-context";
@@ -24,6 +25,7 @@ export function AdminSidebar() {
   const adminMenuItems = [
     { id: "users", title: "User Management", icon: Users },
     { id: "courses", title: "Course Management", icon: BookOpen },
+    { id: "tutors", title: "Tutor Management", icon: UserCog },
     { id: "content", title: "Content Management", icon: FileText },
     { id: "analytics", title: "Analytics", icon: BarChart3 },
     { id: "settings", title: "System Settings", icon: Settings },

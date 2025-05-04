@@ -37,7 +37,7 @@ export function DashboardContent() {
                   {selectedItem.section} section.
                 </p>
                 {selectedItem.title === "Playground" && (
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <p>
                       Welcome to the Playground! This is where you can
                       experiment with different models and settings.
@@ -45,12 +45,12 @@ export function DashboardContent() {
                   </div>
                 )}
                 {selectedItem.title === "Models" && (
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <p>Browse and manage your AI models here.</p>
                   </div>
                 )}
                 {selectedItem.title === "Documentation" && (
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <p>
                       Find comprehensive guides and API references in our
                       documentation.
@@ -58,7 +58,7 @@ export function DashboardContent() {
                   </div>
                 )}
                 {selectedItem.title === "Settings" && (
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <p>Configure your account and application settings.</p>
                   </div>
                 )}
@@ -70,12 +70,12 @@ export function DashboardContent() {
                 <h3 className="text-lg font-medium">Project Details</h3>
                 <p>You are viewing the {selectedItem.title} project.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <h4 className="font-medium mb-2">Project Stats</h4>
                     <p>Active users: 1,245</p>
                     <p>Tasks completed: 89%</p>
                   </div>
-                  <div className="bg-muted p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded">
                     <h4 className="font-medium mb-2">Recent Activity</h4>
                     <p>Last updated: 2 hours ago</p>
                     <p>Contributors: 8</p>
@@ -88,17 +88,17 @@ export function DashboardContent() {
       </Card>
 
       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50 p-4">
+        <div className="aspect-video rounded-sm bg-muted/50 p-4">
           <h3 className="font-medium mb-2">Analytics</h3>
           <p className="text-sm text-muted-foreground">
             View performance metrics
           </p>
         </div>
-        <div className="aspect-video rounded-xl bg-muted/50 p-4">
+        <div className="aspect-video rounded bg-muted/50 p-4">
           <h3 className="font-medium mb-2">Resources</h3>
           <p className="text-sm text-muted-foreground">Access helpful guides</p>
         </div>
-        <div className="aspect-video rounded-xl bg-muted/50 p-4">
+        <div className="aspect-video rounded bg-muted/50 p-4">
           <h3 className="font-medium mb-2">Support</h3>
           <p className="text-sm text-muted-foreground">Get help when needed</p>
         </div>

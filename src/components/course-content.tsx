@@ -144,7 +144,7 @@ export function CourseContent() {
                 <div className="space-y-4">
                   {selectedCourse.tutors.map((tutor) => (
                     <div key={tutor.id} className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">
+                      <div className="h-10 w-10 rounded bg-muted overflow-hidden">
                         {tutor.avatar ? (
                           <img
                             src={tutor.avatar || "/placeholder.svg"}

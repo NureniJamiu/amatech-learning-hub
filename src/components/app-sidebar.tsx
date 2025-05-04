@@ -27,7 +27,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="border-b pb-2">
         <div className="flex items-center gap-2 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white">
             <GraduationCap className="h-5 w-5" />
           </div>
           <div

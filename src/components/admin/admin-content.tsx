@@ -7,6 +7,7 @@ import { ContentManagement } from "@/components/admin/content-management";
 import { Analytics } from "@/components/admin/analytics";
 import { SystemSettings } from "@/components/admin/system-settings";
 import { Permissions } from "@/components/admin/permissions";
+import { TutorManagement } from "@/components/admin/tutor-management";
 
 export function AdminContent() {
   const { activeAdminSection } = useAppContext();
@@ -16,6 +17,7 @@ export function AdminContent() {
       {activeAdminSection === "users" && <UserManagement />}
       {activeAdminSection === "courses" && <CourseManagement />}
       {activeAdminSection === "content" && <ContentManagement />}
+      {activeAdminSection === "tutors" && <TutorManagement />}
       {activeAdminSection === "analytics" && <Analytics />}
       {activeAdminSection === "settings" && <SystemSettings />}
       {activeAdminSection === "permissions" && <Permissions />}

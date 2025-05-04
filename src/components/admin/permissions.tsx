@@ -205,7 +205,7 @@ export function Permissions() {
                 </Dialog>
               </div>
 
-              <div className="rounded-md border">
+              <div className="rounded border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -293,7 +293,7 @@ export function Permissions() {
                 </Button>
               </div>
 
-              <div className="rounded-md border">
+              <div className="rounded border">
                 <Table>
                   <TableHeader>
                     <TableRow>

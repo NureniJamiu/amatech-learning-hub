@@ -82,7 +82,7 @@ export default function CustomPassword() {
 
       {/* Password strength indicator */}
       <div
-        className="bg-border mt-3 mb-4 h-1 w-full overflow-hidden rounded-full"
+        className="bg-border mt-3 mb-4 h-1 w-full overflow-hidden rounded"
         role="progressbar"
         aria-valuenow={strengthScore}
         aria-valuemin={0}
