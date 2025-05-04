@@ -4,6 +4,7 @@ export type User = {
   name: string;
   email: string;
   level: number;
+  isAdmin: boolean;
   currentSemester: 1 | 2;
   avatar?: string;
   department: string;
@@ -58,4 +59,12 @@ export type ChatMessage = {
   content: string;
   sender: "user" | "ai";
   timestamp: string;
+};
+
+export type TimetableEntry = {
+  id: string;
+  day: string;
+  time: string;
+  location: string;
+  courseId: string;
 };
