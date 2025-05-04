@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/utils/prisma";
 
-// START FROM HERE WHEN NEXT YOU WANT TO WORK ON THIS PROJECT
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id: context.params.id },
     });
 
     if (!course) {
@@ -30,7 +29,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const { courseCode, courseTitle, level, description } = await req.json();
@@ -43,7 +42,7 @@ export async function PUT(
     }
 
     const updatedCourse = await prisma.course.update({
-      where: { id: params.id },
+      where: { id: context.params.id },
       data: {
         courseCode,
         courseTitle,
@@ -64,11 +63,11 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const deletedCourse = await prisma.course.delete({
-      where: { id: params.id },
+      where: { id: context.params.id },
     });
 
     return NextResponse.json(deletedCourse, { status: 200 });
