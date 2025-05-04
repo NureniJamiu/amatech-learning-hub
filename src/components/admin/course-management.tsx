@@ -47,14 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-  type Option,
-} from "@/components/ui/multi-select";
+import { MultiSelect, type Option } from "@/components/ui/multi-select";
 
 export function CourseManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,21 +163,8 @@ export function CourseManagement() {
                       options={tutors}
                       selected={selectedTutors}
                       onValueChange={setSelectedTutors}
-                    >
-                      <MultiSelectTrigger>
-                        <MultiSelectValue placeholder="Select tutors" />
-                      </MultiSelectTrigger>
-                      <MultiSelectContent>
-                        {tutors.map((tutor) => (
-                          <MultiSelectItem
-                            key={tutor.value}
-                            value={tutor.value}
-                          >
-                            {tutor.label}
-                          </MultiSelectItem>
-                        ))}
-                      </MultiSelectContent>
-                    </MultiSelect>
+                      placeholder="Select tutors"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
@@ -212,7 +192,7 @@ export function CourseManagement() {
               />
             </div>
           </div>
-          <div className="rounded border">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -239,7 +219,7 @@ export function CourseManagement() {
                           {course.tutors.map((tutor) => (
                             <span
                               key={tutor.id}
-                              className="inline-flex items-center rounded border px-2.5 py-0.5 text-xs font-semibold"
+                              className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
                             >
                               {tutor.name.split(" ")[0]}
                             </span>
