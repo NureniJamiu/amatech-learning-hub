@@ -24,7 +24,7 @@ export function SidebarContextProvider({
     title: string;
   } | null>({
     section: "Platform",
-    title: "Dashboard",
+    title: "Playground",
   });
 
   return (

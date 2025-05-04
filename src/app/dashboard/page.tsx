@@ -1,49 +1,21 @@
-import { AppSidebar } from "../../components/app-sidebar";
-import { DashboardContent } from "../../components/dashboard-content";
-import { SidebarContextProvider } from "@/context/sidebar-context";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { AppContent } from "@/components/app-content";
+import { AppHeader } from "@/components/app-header";
+import { AppSidebar } from "@/components/app-sidebar";
+import { AppProvider } from "@/context/app-context";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-export default function Page() {
+export default function DashboardPage() {
   return (
-    <SidebarContextProvider>
+    <AppProvider>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Content</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col p-4">
-            <DashboardContent />
+          <AppHeader />
+          <div className="flex flex-1 flex-col p-6">
+            <AppContent />
           </div>
         </SidebarInset>
       </SidebarProvider>
-    </SidebarContextProvider>
+    </AppProvider>
   );
 }

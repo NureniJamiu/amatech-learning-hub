@@ -1,180 +1,74 @@
 "use client";
 
-import * as React from "react";
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import type React from "react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavBookmarks } from "@/components/nav-bookmarks";
-import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { GraduationCap } from "lucide-react";
+
+import { currentUser } from "@/data/mock-data";
+import { useAppContext } from "@/context/app-context";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AdminSidebar } from "@/components/admin-sidebar";
+import { CourseSidebar } from "@/components/course-sidebar";
+import { MainNav } from "@/components/main-nav";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "Nureni Jamiu",
-    email: "nurenijamiu@gmail.com",
-    avatar: "/images/login.jpg",
-  },
-  teams: [
-    {
-      name: "Amatech Lasu",
-      logo: GalleryVerticalEnd,
-      plan: "Student Learning Hub",
-    },
-    {
-      name: "Administrator",
-      logo: AudioWaveform,
-      plan: "Department of Management Technology",
-    },
-  ],
-  navMain: [
-    {
-      title: "Courses",
-      url: "#",
-      icon: BookOpen,
-      isActive: true,
-      items: [
-        {
-          title: "MTE 301",
-          url: "#",
-        },
-        {
-          title: "MTE 303",
-          url: "#",
-        },
-        {
-          title: "MTE 305",
-          url: "#",
-        },
-        {
-          title: "MTE 307",
-          url: "#",
-        },
-        {
-          title: "MTE 309",
-          url: "#",
-        },
-        {
-          title: "MTE 310",
-          url: "#",
-        },
-      ],
-      // },
-      // {
-      //   title: "Models",
-      //   url: "#",
-      //   icon: Bot,
-      //   items: [
-      //     {
-      //       title: "Genesis",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Explorer",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Quantum",
-      //       url: "#",
-      //     },
-      //   ],
-      // },
-      // {
-      //   title: "Documentation",
-      //   url: "#",
-      //   icon: BookOpen,
-      //   items: [
-      //     {
-      //       title: "Introduction",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Get Started",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Tutorials",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Changelog",
-      //       url: "#",
-      //     },
-      //   ],
-      // },
-      // {
-      //   title: "Settings",
-      //   url: "#",
-      //   icon: Settings2,
-      //   items: [
-      //     {
-      //       title: "General",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Team",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Billing",
-      //       url: "#",
-      //     },
-      //     {
-      //       title: "Limits",
-      //       url: "#",
-      //     },
-      //   ],
-    },
-  ],
-  bookmarks: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-};
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar();
+  const { isAdminMode } = useAppContext();
+
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+      <SidebarHeader className="border-b pb-2">
+        <div className="flex items-center gap-2 px-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white">
+            <GraduationCap className="h-5 w-5" />
+          </div>
+          <div
+            className={`flex flex-col transition-opacity duration-200 ${
+              state === "collapsed" ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            <span className="font-semibold">Amatech Lasu</span>
+            <span className="text-xs text-muted-foreground">
+              Student Learning Hub
+            </span>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavBookmarks bookmarks={data.bookmarks} />
+        <MainNav />
+        {isAdminMode ? <AdminSidebar /> : <CourseSidebar />}
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
+      <SidebarFooter className="border-t">
+        <div className="flex items-center gap-3 p-3">
+          <Avatar>
+            {currentUser.avatar ? (
+              <AvatarImage
+                src={currentUser.avatar || "/placeholder.svg"}
+                alt={currentUser.name}
+              />
+            ) : (
+              <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+            )}
+          </Avatar>
+          <div
+            className={`flex flex-col transition-opacity duration-200 ${
+              state === "collapsed" ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            <span className="font-medium">{currentUser.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {currentUser.email}
+            </span>
+          </div>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
