@@ -374,7 +374,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto scrollbar scrollbar-w-1 scrollbar-thumb-green-600 scrollbar-track-white scrollbar-thumb-rounded-full scrollbar-track-rounded-full group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}

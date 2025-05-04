@@ -278,8 +278,8 @@ export function DashboardView() {
             </Dialog>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
+            <Table className="overflow-x-hidden">
+              <TableHeader className="overflow-x-clip">
                 <TableRow>
                   <TableHead>Day</TableHead>
                   <TableHead>Time</TableHead>
