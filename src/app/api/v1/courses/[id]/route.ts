@@ -4,11 +4,12 @@ import prisma from "@/utils/prisma";
 // START FROM HERE WHEN NEXT YOU WANT TO WORK ON THIS PROJECT
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!course) {
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { courseCode, courseTitle, level, description } = await req.json();
 
     if (!courseCode && !courseTitle && !level && !description) {
@@ -43,7 +45,7 @@ export async function PUT(
     }
 
     const updatedCourse = await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         courseCode,
         courseTitle,
@@ -64,11 +66,12 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const deletedCourse = await prisma.course.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(deletedCourse, { status: 200 });
