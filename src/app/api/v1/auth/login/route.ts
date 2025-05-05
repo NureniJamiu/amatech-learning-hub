@@ -36,13 +36,16 @@ export async function POST(req: NextRequest) {
       token,
       user: {
         id: user.id,
-        name: user.name,
+        firstname: user.firstname,
         lastname: user.lastname,
         email: user.email,
+        matricNumber: user.matricNumber,
         level: user.level,
-        role: user.role,
-        // bio: user.bio,
-        // profileImg: user.profileImg,
+        isAdmin: user.isAdmin,
+        department: user.department,
+        faculty: user.faculty,
+        currentSemester: user.currentSemester,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
