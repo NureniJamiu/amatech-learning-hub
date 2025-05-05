@@ -1,92 +1,148 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateRequest } from "@/middleware/auth.middleware";
+import { isAdminUser } from "@/helpers";
 
-export async function GET(req: NextRequest) {
+// GET /api/courses - Get all courses with optional filtering
+export async function GET(request: NextRequest) {
   try {
-    const authUser = authenticateRequest(req);
-
-    if (!authUser) {
+    const authUser = authenticateRequest(request);
+    if (!authUser || !authUser.userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const level = searchParams.get("level");
+    const { searchParams } = new URL(request.url);
+    const level = searchParams.get("level")
+      ? Number.parseInt(searchParams.get("level")!)
+      : undefined;
+    const semester = searchParams.get("semester")
+      ? Number.parseInt(searchParams.get("semester")!)
+      : undefined;
+    const search = searchParams.get("search") || undefined;
+    const page = searchParams.get("page")
+      ? Number.parseInt(searchParams.get("page")!)
+      : 1;
+    const limit = searchParams.get("limit")
+      ? Number.parseInt(searchParams.get("limit")!)
+      : 10;
+    const skip = (page - 1) * limit;
 
-    const userId = authUser?.userId || searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { message: "User ID is required" },
-        { status: 400 }
-      );
+    // Build filter object
+    const where: any = {};
+    if (level) where.level = level;
+    if (semester) where.semester = semester;
+    if (search) {
+      where.OR = [
+        { code: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
+      ];
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    // Get courses with pagination
+    const [courses, total] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          tutors: {
+            include: {
+              tutor: true,
+            },
+          },
+          materials: true,
+          pastQuestions: true,
+        },
+        orderBy: { code: "asc" },
+      }),
+      prisma.course.count({ where }),
+    ]);
 
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
+    // Transform data to match our frontend types
+    const transformedCourses = courses.map((course) => ({
+      ...course,
+      tutors: course.tutors.map((ct) => ct.tutor),
+    }));
 
-    let whereCondition = {};
-
-    if (level === "All") {
-      whereCondition = {};
-    } else if (level && level !== "All") {
-      whereCondition = { level };
-    } else {
-      whereCondition = { level: user.level };
-    }
-
-    const courses = await prisma.course.findMany({
-      where: whereCondition,
-      orderBy: { courseCode: "asc" },
-    });
-
-    return NextResponse.json(courses, { status: 200 });
+    return NextResponse.json({ courses: transformedCourses, total });
   } catch (error) {
-    console.error("[GET COURSES]", error);
+    console.error("Error fetching courses:", error);
     return NextResponse.json(
-      { message: "Server error", error },
+      { message: "Failed to fetch courses" },
       { status: 500 }
     );
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST /api/courses - Create a new course (admin only)
+export async function POST(request: NextRequest) {
   try {
-    const authUser = authenticateRequest(req);
-
-    if (!authUser) {
+    const authUser = authenticateRequest(request);
+    if (!authUser || !authUser.userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("User ID from token:", authUser?.userId);
-    const { courseCode, courseTitle, level, description } = await req.json();
+    if (!isAdminUser(authUser.userId)) {
+      return NextResponse.json(
+        { message: "Forbidden: Only an admin can perform this operation" },
+        { status: 403 }
+      );
+    }
 
-    if (!courseCode || !courseTitle || !level) {
+    const body = await request.json();
+    const { code, title, units, level, semester, description, tutorIds } = body;
+
+    if (!code || !title || !level || !semester) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const newCourse = await prisma.course.create({
+    const course = await prisma.course.create({
       data: {
-        courseCode,
-        courseTitle,
+        code,
+        title,
+        units,
         level,
+        semester,
         description,
       },
     });
 
-    return NextResponse.json(newCourse, { status: 201 });
+    // Assign tutors if provided
+    if (tutorIds && tutorIds.length > 0) {
+      await prisma.courseToTutor.createMany({
+        data: tutorIds.map((tutorId: string) => ({
+          courseId: course.id,
+          tutorId,
+        })),
+      });
+    }
+
+    const createdCourse = await prisma.course.findUnique({
+      where: { id: course.id },
+      include: {
+        tutors: {
+          include: {
+            tutor: true,
+          },
+        },
+        materials: true,
+        pastQuestions: true,
+      },
+    });
+
+    const transformedCourse = {
+      ...createdCourse,
+      tutors: createdCourse?.tutors.map((ct) => ct.tutor) || [],
+    };
+
+    return NextResponse.json(transformedCourse);
   } catch (error) {
-    console.error("[CREATE COURSE]", error);
+    console.error("Error creating course:", error);
     return NextResponse.json(
-      { message: "Server error", error },
+      { message: "Failed to create course" },
       { status: 500 }
     );
   }

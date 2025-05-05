@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
         lastname,
         level,
         email,
+        currentSemester: 1,
+        department: "Management Technology",
+        faculty: "Management Sciences",
         password: hashedPassword,
       },
     });
@@ -60,6 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         token,
+        message: "User registered successfully",
         user: {
           id: user.id,
           firstname: user.firstname,
@@ -72,6 +76,8 @@ export async function POST(req: NextRequest) {
           faculty: user.faculty,
           currentSemester: user.currentSemester,
           avatar: user.avatar,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
       },
       { status: 201 }
@@ -79,7 +85,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Failed to register user" },
       { status: 500 }
     );
   }

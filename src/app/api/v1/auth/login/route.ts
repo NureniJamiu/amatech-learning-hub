@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
         faculty: user.faculty,
         currentSemester: user.currentSemester,
         avatar: user.avatar,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {
