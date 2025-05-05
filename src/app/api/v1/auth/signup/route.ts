@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       data: {
         firstname,
         lastname,
-        level,
+        level: Number.parseInt(level),
         email,
         currentSemester: 1,
         department: "Management Technology",

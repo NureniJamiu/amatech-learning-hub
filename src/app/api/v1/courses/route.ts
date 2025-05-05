@@ -82,7 +82,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    if (!isAdminUser(authUser.userId)) {
+    const isAdmin = await isAdminUser(authUser.userId);
+    console.log("isAdmin", isAdmin);
+
+    if (!isAdmin) {
       return NextResponse.json(
         { message: "Forbidden: Only an admin can perform this operation" },
         { status: 403 }
@@ -104,8 +107,8 @@ export async function POST(request: NextRequest) {
         code,
         title,
         units,
-        level,
-        semester,
+        level: Number.parseInt(level),
+        semester: Number.parseInt(semester),
         description,
       },
     });
