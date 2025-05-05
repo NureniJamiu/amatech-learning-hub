@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/prisma";
+import prisma from "@/lib/prisma";
 import { hashPassword } from "@/utils/hash";
 import { generateAuthToken } from "@/utils/token";
 
