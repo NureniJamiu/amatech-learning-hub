@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       tutors: createdCourse?.tutors.map((ct) => ct.tutor) || [],
     };
 
-    return NextResponse.json(transformedCourse);
+    return NextResponse.json(transformedCourse, { status: 201 });
   } catch (error) {
     console.error("Error creating course:", error);
     return NextResponse.json(
