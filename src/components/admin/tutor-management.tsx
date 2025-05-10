@@ -46,6 +46,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import axios from "axios";
+import ImageUploader from "../image-uploader";
 
 export function TutorManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,16 +131,19 @@ export function TutorManagement() {
                     className="col-span-3"
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="avatar" className="text-right">
+                <div className="grid grid-cols-5 items-center gap-4">
+                  {/* <Label htmlFor="avatar" className="text-right">
                     Profile Image
-                  </Label>
-                  <Input
+                  </Label> */}
+                  {/* <Input
                     id="avatar"
                     type="file"
                     accept="image/*"
+                    onChange={handleFileSubmit}
                     className="col-span-3"
-                  />
+                  /> */}
+                  <div className="col-span-2 text-sm" >Image</div>
+                  <ImageUploader />
                 </div>
               </div>
               <DialogFooter>
@@ -237,4 +242,4 @@ export function TutorManagement() {
       </Card>
     </>
   );
-}
+};
