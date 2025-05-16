@@ -272,26 +272,20 @@ export const courses: Course[] = [
 export const bookmarks: Bookmark[] = [
   {
     id: "bookmark-1",
-    title: "Design Engineering",
+    title: "Course Material 3 - MTE 399",
     icon: Compass,
     url: "#",
   },
   {
     id: "bookmark-2",
-    title: "Sales & Marketing",
+    title: "Course Material 1 - MTE 301",
     icon: Briefcase,
     url: "#",
   },
   {
     id: "bookmark-3",
-    title: "Travel",
+    title: "Past Question 2023 - MTE 301",
     icon: Compass,
-    url: "#",
-  },
-  {
-    id: "bookmark-4",
-    title: "More",
-    icon: Clock,
     url: "#",
   },
 ];
