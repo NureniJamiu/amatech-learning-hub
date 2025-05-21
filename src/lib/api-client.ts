@@ -1,5 +1,5 @@
 // API base URL - can be configured based on environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 // Error type for API responses
 export type ApiError = {
