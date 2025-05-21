@@ -66,76 +66,41 @@ export async function GET(request: NextRequest) {
 // POST /api/tutors - Create a new tutor (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const authUser = authenticateRequest(request);
-    if (!authUser || !authUser.userId) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-
-    const isAdmin = await isAdminUser(authUser.userId);
-    console.log("isAdmin", isAdmin);
-
-    const contentType = request.headers.get("content-type") || "";
-
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      const name = formData.get("name") as string;
-      const email = formData.get("email") as string;
-      const avatarFile = formData.get("avatar") as File | null;
-
-      //     const cloudinaryResponse = await cloudinary.uploader.upload(avatarFile, {
-      //     upload_preset: "tutors",
-      //   });
-
-      if (!name || !email) {
-        return NextResponse.json(
-          { message: "Name and email are required" },
-          { status: 400 }
-        );
+      const authUser = authenticateRequest(request);
+      if (!authUser || !authUser.userId) {
+          return NextResponse.json(
+              { message: "Unauthorized" },
+              { status: 401 }
+          );
       }
 
-      const tutorData: any = {
-        name,
-        email,
-      };
+      const isAdmin = await isAdminUser(authUser.userId);
+      console.log("isAdmin", isAdmin);
 
-      //   TODO - Handle file upload to Cloudinary or any other storage service
-      //   const cloudinaryResponse = await cloudinary.uploader.upload(avatarFile, {
-      //     upload_preset: "tutors",
-      //   });
-
-      //   tutorData.avatar = cloudinaryResponse.secure_url;
-
-      const tutor = await prisma.tutor.create({
-        data: tutorData,
-      });
-
-      return NextResponse.json(tutor);
-    } else {
       const body = await request.json();
       const { name, email, avatar } = body;
 
       if (!name || !email) {
-        return NextResponse.json(
-          { message: "Name and email are required" },
-          { status: 400 }
-        );
+          return NextResponse.json(
+              { message: "Name and email are required" },
+              { status: 400 }
+          );
       }
 
       const tutor = await prisma.tutor.create({
-        data: {
-          name,
-          email,
-          avatar,
-        },
+          data: {
+              name,
+              email,
+              avatar,
+          },
       });
 
       return NextResponse.json(tutor, { status: 201 });
-    }
   } catch (error) {
-    console.error("Error creating tutor:", error);
-    return NextResponse.json(
-      { message: "Failed to create tutor" },
-      { status: 500 }
-    );
+      console.error("Error creating tutor:", error);
+      return NextResponse.json(
+          { message: "Failed to create tutor" },
+          { status: 500 }
+      );
   }
 }
