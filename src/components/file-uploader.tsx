@@ -1,9 +1,17 @@
-"use client"
+"use client";
 
 import { useRef, useState } from "react";
-import { CircleUserRoundIcon } from "lucide-react";
-import { Button } from "@/components/ui/button"
+import { CircleUserRoundIcon, FileTextIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import useFileUpload from "@/hooks/useFileUpload";
+
+// Import your hooks
+import {
+    useMaterials,
+    useUploadMaterial,
+    useDeleteMaterial,
+    type MaterialInput,
+} from "@/hooks/use-materials";
 
 interface FileUploaderProps {
     uploadPreset: string;
@@ -11,6 +19,7 @@ interface FileUploaderProps {
     onUploadComplete?: (url: string) => void;
     initialImageUrl?: string;
     className?: string;
+    accept?: string;
 }
 
 export default function FileUploader({
@@ -19,6 +28,7 @@ export default function FileUploader({
     onUploadComplete,
     initialImageUrl = "",
     className = "",
+    accept = "image/*",
 }: FileUploaderProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>(initialImageUrl);
@@ -37,16 +47,20 @@ export default function FileUploader({
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
-
         if (!file) return;
 
         setSelectedFile(file);
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setPreviewUrl(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        const isImage = file.type.startsWith("image/");
+        if (isImage) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setPreviewUrl("");
+        }
 
         try {
             const url = await uploadFile(
@@ -54,6 +68,7 @@ export default function FileUploader({
                 uploadPreset,
                 folder ? { folder } : {}
             );
+            console.log("File uploaded successfully:", url);
             if (url) setPreviewUrl(url);
         } catch (err) {
             console.error("Upload failed", err);
@@ -61,18 +76,68 @@ export default function FileUploader({
     };
 
     const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault(); // Prevent form submission
+        e.preventDefault();
         fileInputRef.current?.click();
     };
 
     const handleRemove = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault(); // Prevent form submission
+        e.preventDefault();
         reset();
         setPreviewUrl("");
         setSelectedFile(null);
     };
 
     const fileName = selectedFile?.name;
+    const isImage = selectedFile?.type.startsWith("image/");
+
+    // Handle form submission for creating/updating courses
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!formData.code.trim() || !formData.title.trim()) {
+            //   toast({
+            //     title: "Validation Error",
+            //     description: "Course code and title are required",
+            //     variant: "destructive",
+            //   });
+            return;
+        }
+
+        try {
+            if (editingCourse) {
+                await updateCourseMutation.mutateAsync({
+                    id: editingCourse,
+                    data: formData,
+                });
+                // toast({
+                //   title: "Success",
+                //   description: "Course updated successfully",
+                // });
+            } else {
+                await createCourseMutation.mutateAsync(formData);
+                // toast({
+                //   title: "Success",
+                //   description: "Course created successfully",
+                // });
+            }
+
+            // Reset form and close dialog
+            setFormData({
+                code: "",
+                title: "",
+                units: 2,
+                level: 100,
+                semester: 1,
+                description: "",
+                tutorIds: [],
+            });
+            setIsCreateDialogOpen(false);
+            setEditingCourse(null);
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
+        } catch (error) {
+            // Error is handled by the mutation's onError
+        }
+    };
 
     return (
         <div className={`flex flex-col items-center ${className}`}>
@@ -81,24 +146,31 @@ export default function FileUploader({
                     className="border-input relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border"
                     aria-label={
                         previewUrl
-                            ? "Preview of uploaded image"
-                            : "Default user avatar"
+                            ? "Preview of uploaded file"
+                            : "Default file icon"
                     }
                 >
-                    {previewUrl ? (
+                    {previewUrl && isImage ? (
                         <img
                             className="size-full object-cover"
                             src={previewUrl}
-                            alt="Preview of uploaded image"
+                            alt="Preview"
                             width={32}
                             height={32}
                         />
                     ) : (
                         <div aria-hidden="true">
-                            <CircleUserRoundIcon
-                                className="opacity-60"
-                                size={16}
-                            />
+                            {isImage ? (
+                                <CircleUserRoundIcon
+                                    className="opacity-60"
+                                    size={16}
+                                />
+                            ) : (
+                                <FileTextIcon
+                                    className="opacity-60"
+                                    size={16}
+                                />
+                            )}
                         </div>
                     )}
                 </div>
@@ -110,15 +182,15 @@ export default function FileUploader({
                         aria-haspopup="dialog"
                         disabled={isUploading}
                     >
-                        {fileName ? "Change image" : "Upload image"}
+                        {fileName ? "Change file" : "Upload file"}
                     </Button>
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept={accept}
                         onChange={handleFileChange}
                         className="sr-only"
-                        aria-label="Upload image file"
+                        aria-label="Upload file"
                         tabIndex={-1}
                     />
                 </div>

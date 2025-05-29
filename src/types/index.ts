@@ -32,6 +32,25 @@ export type Material = {
   fileType: string;
 };
 
+export type Material2 = {
+    id: string;
+    title: string;
+    fileUrl: string;
+    fileType: string;
+    createdAt: string; // or Date if you parse it
+    course: {
+        code: string;
+        title: string;
+    };
+    uploadedBy: {
+        id: string;
+        firstname: string;
+        lastname: string;
+        email: string;
+    };
+};
+
+
 export type PastQuestion = {
   id: string;
   title: string;
