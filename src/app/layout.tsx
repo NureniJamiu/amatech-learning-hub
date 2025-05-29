@@ -4,7 +4,6 @@ import "@/app/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { QueryProvider } from "@/providers/query-provider";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 // import { ThemeProvider } from "@/components/theme-provider"
 // import { Toaster } from "@/components/ui/toaster"
@@ -16,8 +15,6 @@ export const metadata: Metadata = {
     description: "Access course materials and resources",
 };
 
-const queryClient = new QueryClient();
-
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -25,16 +22,14 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <QueryClientProvider client={queryClient}>
-                <body className={inter.className}>
-                    <QueryProvider>
-                        {/* <ThemeProvider attribute="class" defaultTheme="light" enableSystem> */}
-                        {children}
-                        {/* <Toaster /> */}
-                        {/* </ThemeProvider> */}
-                    </QueryProvider>
-                </body>
-            </QueryClientProvider>
+            <body className={inter.className}>
+                <QueryProvider>
+                    {/* <ThemeProvider attribute="class" defaultTheme="light" enableSystem> */}
+                    {children}
+                    {/* <Toaster /> */}
+                    {/* </ThemeProvider> */}
+                </QueryProvider>
+            </body>
         </html>
     );
 }

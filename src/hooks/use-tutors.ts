@@ -1,155 +1,142 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, showApiError } from "@/lib/api-client";
-import type { Tutor } from "@/types";
+import { Course } from "@/types";
 
-// Query keys for React Query
+// Query keys for Tutors
 export const tutorKeys = {
-  all: ["tutors"] as const,
-  lists: () => [...tutorKeys.all, "list"] as const,
-  list: (filters: TutorFilters) => [...tutorKeys.lists(), filters] as const,
-  details: () => [...tutorKeys.all, "detail"] as const,
-  detail: (id: string) => [...tutorKeys.details(), id] as const,
+    all: ["tutors"] as const,
+    lists: () => [...tutorKeys.all, "list"] as const,
+    list: (filters: TutorFilters) => [...tutorKeys.lists(), filters] as const,
+    details: () => [...tutorKeys.all, "detail"] as const,
+    detail: (id: string) => [...tutorKeys.details(), id] as const,
+};
+
+// Types
+export type Tutor = {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    courses?: Course[]; // Course codes assigned to tutor
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type TutorFilters = {
-  search?: string;
-  page?: number;
-  limit?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
 };
 
 export type TutorInput = {
-  name: string;
-  email: string;
-  avatar?: string | File;
+    name: string;
+    email: string;
+    avatar?: string;
 };
 
 // Hook to fetch tutors with filters
 export function useTutors(filters: TutorFilters = {}) {
-  return useQuery({
-    queryKey: tutorKeys.list(filters),
-    queryFn: () =>
-      apiClient.get<{ tutors: Tutor[]; total: number }>("/tutors", {
-        params: filters,
-      }),
-  });
+    return useQuery({
+        queryKey: tutorKeys.list(filters),
+        queryFn: () =>
+            apiClient.get<{ tutors: Tutor[]; total: number }>("/tutors", {
+                params: filters,
+            }),
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+    });
 }
 
 // Hook to fetch a single tutor by ID
 export function useTutor(id: string) {
-  return useQuery({
-    queryKey: tutorKeys.detail(id),
-    queryFn: () => apiClient.get<Tutor>(`/tutors/${id}`),
-    enabled: !!id, // Only run if ID is provided
-  });
+    return useQuery({
+        queryKey: tutorKeys.detail(id),
+        queryFn: () => apiClient.get<Tutor>(`/tutors/${id}`),
+        enabled: !!id,
+        staleTime: 5 * 60 * 1000,
+    });
 }
 
 // Hook to create a new tutor
 export function useCreateTutor() {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (tutorData: TutorInput) => {
-      // Handle file upload if avatar is a File
-      if (tutorData.avatar instanceof File) {
-        const formData = new FormData();
-        formData.append("name", tutorData.name);
-        formData.append("email", tutorData.email);
-        formData.append("avatar", tutorData.avatar);
-
-        // Use fetch directly for FormData
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "/api"}/tutors`,
-          {
-            method: "POST",
-            body: formData,
-            credentials: "include",
-          }
-        );
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw error;
-        }
-
-        return await response.json();
-      }
-
-      // Regular JSON request
-      return apiClient.post<Tutor>("/tutors", tutorData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+    return useMutation({
+        mutationFn: (tutorData: TutorInput) =>
+            apiClient.post<Tutor>("/tutors", tutorData),
+        onSuccess: (newTutor) => {
+            // Optimistically update the cache
+            queryClient.setQueriesData(
+                { queryKey: tutorKeys.lists() },
+                (oldData: { tutors: Tutor[]; total: number } | undefined) => {
+                    if (!oldData) return { tutors: [newTutor], total: 1 };
+                    return {
+                        tutors: [newTutor, ...oldData.tutors],
+                        total: oldData.total + 1,
+                    };
+                }
+            );
+            // Also invalidate to ensure fresh data
+            queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
+        },
+        onError: (error) => {
+            showApiError(error);
+        },
+    });
 }
 
 // Hook to update an existing tutor
 export function useUpdateTutor() {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<TutorInput>;
-    }) => {
-      // Handle file upload if avatar is a File
-      if (data.avatar instanceof File) {
-        const formData = new FormData();
-        if (data.name) formData.append("name", data.name);
-        if (data.email) formData.append("email", data.email);
-        formData.append("avatar", data.avatar);
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<TutorInput> }) =>
+            apiClient.put<Tutor>(`/tutors/${id}`, data),
+        onMutate: async ({ id, data }) => {
+            // Optimistic update
+            await queryClient.cancelQueries({ queryKey: tutorKeys.detail(id) });
+            const previousTutor = queryClient.getQueryData(
+                tutorKeys.detail(id)
+            );
 
-        // Use fetch directly for FormData
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "/api"}/tutors/${id}`,
-          {
-            method: "PUT",
-            body: formData,
-            credentials: "include",
-          }
-        );
+            queryClient.setQueryData(
+                tutorKeys.detail(id),
+                (old: Tutor | undefined) => (old ? { ...old, ...data } : old)
+            );
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw error;
-        }
-
-        return await response.json();
-      }
-
-      // Regular JSON request
-      return apiClient.put<Tutor>(`/tutors/${id}`, data);
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: tutorKeys.detail(variables.id),
-      });
-      queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+            return { previousTutor };
+        },
+        onSuccess: (updatedTutor, variables) => {
+            queryClient.setQueryData(
+                tutorKeys.detail(variables.id),
+                updatedTutor
+            );
+            queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
+        },
+        onError: (err, { id }, context) => {
+            if (context?.previousTutor) {
+                queryClient.setQueryData(
+                    tutorKeys.detail(id),
+                    context.previousTutor
+                );
+            }
+            showApiError(err);
+        },
+    });
 }
 
 // Hook to delete a tutor
 export function useDeleteTutor() {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (id: string) => apiClient.delete<void>(`/tutors/${id}`),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
-      queryClient.removeQueries({ queryKey: tutorKeys.detail(id) });
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+    return useMutation({
+        mutationFn: (id: string) => apiClient.delete<void>(`/tutors/${id}`),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: tutorKeys.lists() });
+            queryClient.removeQueries({ queryKey: tutorKeys.detail(id) });
+        },
+        onError: (error) => {
+            showApiError(error);
+        },
+    });
 }

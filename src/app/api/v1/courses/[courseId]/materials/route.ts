@@ -11,10 +11,10 @@ interface Params {
 // GET /api/courses/[courseId]/materials - Get all materials for a specific course
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const authUser = authenticateRequest(request);
-    if (!authUser || !authUser.userId) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    // const authUser = authenticateRequest(request);
+    // if (!authUser || !authUser.userId) {
+    //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    // }
 
     const { courseId } = params;
 

@@ -60,11 +60,13 @@ export default function FileUploader({
         }
     };
 
-    const handleButtonClick = () => {
+    const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault(); // Prevent form submission
         fileInputRef.current?.click();
     };
 
-    const handleRemove = () => {
+    const handleRemove = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault(); // Prevent form submission
         reset();
         setPreviewUrl("");
         setSelectedFile(null);
@@ -103,6 +105,7 @@ export default function FileUploader({
 
                 <div className="relative inline-block">
                     <Button
+                        type="button"
                         onClick={handleButtonClick}
                         aria-haspopup="dialog"
                         disabled={isUploading}
@@ -130,6 +133,7 @@ export default function FileUploader({
                         {fileName}
                     </p>
                     <button
+                        type="button"
                         onClick={handleRemove}
                         className="text-destructive font-medium hover:underline"
                         aria-label={`Remove ${fileName}`}
