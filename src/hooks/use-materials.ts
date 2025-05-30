@@ -71,7 +71,13 @@ export function useUploadMaterial() {
             const formData = new FormData();
             formData.append("title", materialData.title);
             formData.append("courseId", materialData.courseId);
-            formData.append("file", materialData.file);
+            if (materialData.file !== null) {
+                formData.append("file", materialData.file);
+            }
+            const token =
+                typeof window !== "undefined"
+                    ? localStorage.getItem("token")
+                    : null;
 
             // Use fetch directly for FormData
             const response = await fetch(
@@ -80,6 +86,9 @@ export function useUploadMaterial() {
                     method: "POST",
                     body: formData,
                     credentials: "include",
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
                 }
             );
 

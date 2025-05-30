@@ -71,13 +71,14 @@ export async function GET(request: NextRequest) {
 // POST /api/materials - Create a new material
 export async function POST(request: NextRequest) {
     try {
-        // const authUser = authenticateRequest(request);
-        // if (!authUser || !authUser.userId) {
-        //     return NextResponse.json(
-        //         { message: "Unauthorized" },
-        //         { status: 401 }
-        //     );
-        // }
+        const authUser = authenticateRequest(request);
+        if (!authUser || !authUser.userId) {
+            console.error("Unauthorized access attempt");
+            return NextResponse.json(
+                { message: "Unauthorized" },
+                { status: 401 }
+            );
+        }
 
         const formData = await request.formData();
 
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
                 title,
                 fileUrl: file,
                 courseId,
-                uploadedById: "authUser.userId", // Replace with actual user ID from auth middleware
+                uploadedById: authUser.userId,
             },
             include: {
                 course: {

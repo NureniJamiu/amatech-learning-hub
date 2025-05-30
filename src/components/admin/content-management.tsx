@@ -95,8 +95,7 @@ export function ContentManagement() {
         limit: 50,
     });
 
-    // console.log("Materials Response:", materialsResponse);
-    // console.log("Courses Response:", coursesResponse);
+
 
     const queryClient = useQueryClient();
     const uploadMaterialMutation = useUploadMaterial();
@@ -110,15 +109,12 @@ export function ContentManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        console.log("Form Data:", formData);
-
         if (!formData.title.trim()) {
             //   toast({
             //     title: "Validation Error",
             //     description: "Title is required",
             //     variant: "destructive",
             //   });
-            console.log("Validation Error: Title is required");
             return;
         }
 
@@ -142,45 +138,6 @@ export function ContentManagement() {
     const handleFileUploadComplete = (url: string) => {
         setFormData((prev) => ({ ...prev, file: url }));
     };
-
-    // Mock data
-    // const materials = [
-    //     {
-    //         id: "1",
-    //         title: "MTE 301 Course Material 1",
-    //         courseCode: "MTE 301",
-    //         fileType: "pdf",
-    //         uploadDate: "2023-09-15",
-    //     },
-    //     {
-    //         id: "2",
-    //         title: "MTE 301 Course Material 2",
-    //         courseCode: "MTE 301",
-    //         fileType: "pdf",
-    //         uploadDate: "2023-09-20",
-    //     },
-    //     {
-    //         id: "3",
-    //         title: "MTE 303 Course Material 1",
-    //         courseCode: "MTE 303",
-    //         fileType: "pdf",
-    //         uploadDate: "2023-10-05",
-    //     },
-    //     {
-    //         id: "4",
-    //         title: "MTE 305 Course Material 1",
-    //         courseCode: "MTE 305",
-    //         fileType: "pdf",
-    //         uploadDate: "2023-10-12",
-    //     },
-    //     {
-    //         id: "5",
-    //         title: "MTE 307 Course Material 1",
-    //         courseCode: "MTE 307",
-    //         fileType: "pdf",
-    //         uploadDate: "2023-11-03",
-    //     },
-    // ];
 
     const pastQuestions = [
         {
@@ -399,71 +356,103 @@ export function ContentManagement() {
                                         className="pl-8"
                                     />
                                 </div>
+                                {materialsError && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => refetchMaterials()}
+                                        className="ml-2"
+                                    >
+                                        Retry
+                                    </Button>
+                                )}
                             </div>
-                            <div className="rounded border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Title</TableHead>
-                                            <TableHead>Course</TableHead>
-                                            <TableHead>File Type</TableHead>
-                                            <TableHead>Upload Date</TableHead>
-                                            <TableHead className="text-right">
-                                                Actions
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {materials.map((material) => (
-                                            <TableRow key={material.id}>
-                                                <TableCell className="font-medium">
-                                                    {material.title}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {material.course.code}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {material.fileType.toUpperCase()}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {material.createdAt}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-8 p-0"
-                                                            >
-                                                                <span className="sr-only">
-                                                                    Open menu
-                                                                </span>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>
-                                                                Actions
-                                                            </DropdownMenuLabel>
-                                                            <DropdownMenuItem>
-                                                                <FileText className="mr-2 h-4 w-4" />
-                                                                View
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem className="text-red-600">
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
+
+                            {/* Error State */}
+                            {materialsError && (
+                                <div className="py-4 text-center text-red-600">
+                                    Failed to load materials. Please try again.
+                                </div>
+                            )}
+
+                            {/* Loading State */}
+                            {materialsLoading && (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                    Loading materials...
+                                </div>
+                            )}
+
+                            {/* Materials Table */}
+                            {!materialsLoading && !materialsError && (
+                                <div className="rounded border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead>Course</TableHead>
+                                                <TableHead>File Type</TableHead>
+                                                <TableHead>
+                                                    Upload Date
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Actions
+                                                </TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {materials.map((material) => (
+                                                <TableRow key={material.id}>
+                                                    <TableCell className="font-medium">
+                                                        {material.title}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {material.course.code}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {material?.fileType?.toUpperCase()}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {material.createdAt}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 p-0"
+                                                                >
+                                                                    <span className="sr-only">
+                                                                        Open
+                                                                        menu
+                                                                    </span>
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>
+                                                                    Actions
+                                                                </DropdownMenuLabel>
+                                                                <DropdownMenuItem>
+                                                                    <FileText className="mr-2 h-4 w-4" />
+                                                                    View
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem className="text-red-600">
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
                         </TabsContent>
                         <TabsContent value="pastQuestions">
                             <div className="flex items-center py-4">
@@ -474,71 +463,102 @@ export function ContentManagement() {
                                         className="pl-8"
                                     />
                                 </div>
+                                {error && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => refetch()}
+                                        className="ml-2"
+                                    >
+                                        Retry
+                                    </Button>
+                                )}
                             </div>
-                            <div className="rounded border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Title</TableHead>
-                                            <TableHead>Course</TableHead>
-                                            <TableHead>Year</TableHead>
-                                            <TableHead>File Type</TableHead>
-                                            <TableHead className="text-right">
-                                                Actions
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {pastQuestions.map((question) => (
-                                            <TableRow key={question.id}>
-                                                <TableCell className="font-medium">
-                                                    {question.title}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {question.courseCode}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {question.year}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {question.fileType.toUpperCase()}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-8 p-0"
-                                                            >
-                                                                <span className="sr-only">
-                                                                    Open menu
-                                                                </span>
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>
-                                                                Actions
-                                                            </DropdownMenuLabel>
-                                                            <DropdownMenuItem>
-                                                                <FileText className="mr-2 h-4 w-4" />
-                                                                View
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem className="text-red-600">
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
+
+                            {/* Error State */}
+                            {error && (
+                                <div className="py-4 text-center text-red-600">
+                                    Failed to load past questions. Please try
+                                    again.
+                                </div>
+                            )}
+
+                            {/* Loading State */}
+                            {isLoading && (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                    Loading past questions...
+                                </div>
+                            )}
+
+                            {/* PastQuestions Table */}
+                            {!isLoading && !error && (
+                                <div className="rounded border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead>Course</TableHead>
+                                                <TableHead>Year</TableHead>
+                                                <TableHead>File Type</TableHead>
+                                                <TableHead className="text-right">
+                                                    Actions
+                                                </TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {pastQuestions.map((question) => (
+                                                <TableRow key={question.id}>
+                                                    <TableCell className="font-medium">
+                                                        {question.title}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {question.courseCode}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {question.year}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {question.fileType.toUpperCase()}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 p-0"
+                                                                >
+                                                                    <span className="sr-only">
+                                                                        Open
+                                                                        menu
+                                                                    </span>
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>
+                                                                    Actions
+                                                                </DropdownMenuLabel>
+                                                                <DropdownMenuItem>
+                                                                    <FileText className="mr-2 h-4 w-4" />
+                                                                    View
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem className="text-red-600">
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
                         </TabsContent>
                     </Tabs>
                 </CardContent>

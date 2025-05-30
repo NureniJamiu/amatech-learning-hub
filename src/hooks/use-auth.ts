@@ -40,38 +40,46 @@ export function useCurrentUser() {
 
 // Hook for user login
 export function useLogin() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
+    const queryClient = useQueryClient();
+    const router = useRouter();
 
-  return useMutation({
-    mutationFn: (credentials: LoginInput) =>
-      apiClient.post<{ user: User; token: string }>("/auth/login", credentials),
-    onSuccess: (data) => {
-      queryClient.setQueryData(authKeys.user, data.user);
-      router.push("/dashboard");
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+    return useMutation({
+        mutationFn: (credentials: LoginInput) =>
+            apiClient.post<{ user: User; token: string }>(
+                "/auth/login",
+                credentials
+            ),
+        onSuccess: (data) => {
+            localStorage.setItem("token", data.token);
+            queryClient.setQueryData(authKeys.user, data.user);
+            router.push("/dashboard");
+        },
+        onError: (error) => {
+            showApiError(error);
+        },
+    });
 }
 
 // Hook for user registration
 export function useRegister() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
+    const queryClient = useQueryClient();
+    const router = useRouter();
 
-  return useMutation({
-    mutationFn: (userData: RegisterInput) =>
-      apiClient.post<{ user: User; token: string }>("/auth/register", userData),
-    onSuccess: (data) => {
-      queryClient.setQueryData(authKeys.user, data.user);
-      router.push("/dashboard");
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+    return useMutation({
+        mutationFn: (userData: RegisterInput) =>
+            apiClient.post<{ user: User; token: string }>(
+                "/auth/register",
+                userData
+            ),
+        onSuccess: (data) => {
+            localStorage.setItem("token", data.token);
+            queryClient.setQueryData(authKeys.user, data.user);
+            router.push("/dashboard");
+        },
+        onError: (error) => {
+            showApiError(error);
+        },
+    });
 }
 
 // Hook for user logout
