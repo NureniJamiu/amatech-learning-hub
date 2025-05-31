@@ -24,82 +24,99 @@ export type PastQuestionFilters = {
 };
 
 export type PastQuestionInput = {
-  title: string;
-  courseId: string;
-  year: number;
-  file: File;
+    title: string;
+    courseId: string;
+    year?: number;
+    file: string | null;
 };
 
 // Hook to fetch past questions with filters
 export function usePastQuestions(filters: PastQuestionFilters = {}) {
-  return useQuery({
-    queryKey: pastQuestionKeys.list(filters),
-    queryFn: () =>
-      apiClient.get<{ pastQuestions: PastQuestion[]; total: number }>(
-        "/past-questions",
-        { params: filters }
-      ),
-  });
+    return useQuery({
+        queryKey: pastQuestionKeys.list(filters),
+        queryFn: () =>
+            apiClient.get<{ pastQuestions: PastQuestion[]; total: number }>(
+                "/past-questions",
+                { params: filters }
+            ),
+    });
 }
 
 // Hook to fetch past questions for a specific course
 export function useCoursePastQuestions(courseId: string) {
-  return useQuery({
-    queryKey: pastQuestionKeys.byCourse(courseId),
-    queryFn: () =>
-      apiClient.get<PastQuestion[]>(`/courses/${courseId}/past-questions`),
-    enabled: !!courseId, // Only run if courseId is provided
-  });
+    return useQuery({
+        queryKey: pastQuestionKeys.byCourse(courseId),
+        queryFn: () =>
+            apiClient.get<PastQuestion[]>(
+                `/courses/${courseId}/past-questions`
+            ),
+        enabled: !!courseId, // Only run if courseId is provided
+    });
 }
 
 // Hook to fetch a single past question by ID
 export function usePastQuestion(id: string) {
-  return useQuery({
-    queryKey: pastQuestionKeys.detail(id),
-    queryFn: () => apiClient.get<PastQuestion>(`/past-questions/${id}`),
-    enabled: !!id, // Only run if ID is provided
-  });
+    return useQuery({
+        queryKey: pastQuestionKeys.detail(id),
+        queryFn: () => apiClient.get<PastQuestion>(`/past-questions/${id}`),
+        enabled: !!id, // Only run if ID is provided
+    });
 }
 
 // Hook to upload a new past question
 export function useUploadPastQuestion() {
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (pastQuestionData: PastQuestionInput) => {
-      const formData = new FormData();
-      formData.append("title", pastQuestionData.title);
-      formData.append("courseId", pastQuestionData.courseId);
-      formData.append("year", pastQuestionData.year.toString());
-      formData.append("file", pastQuestionData.file);
+    return useMutation({
+        mutationFn: async (pastQuestionData: PastQuestionInput) => {
+            const formData = new FormData();
+            formData.append("title", pastQuestionData.title);
+            formData.append("courseId", pastQuestionData.courseId);
+            if (pastQuestionData.year) {
+                formData.append("year", pastQuestionData.year.toString());
+            }
+            if (pastQuestionData.file) {
+                formData.append("file", pastQuestionData.file);
+            }
+            const token =
+                typeof window !== "undefined"
+                    ? localStorage.getItem("token")
+                    : null;
 
-      // Use fetch directly for FormData
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "/api"}/past-questions`,
-        {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        }
-      );
+            // Use fetch directly for FormData
+            const response = await fetch(
+                `${
+                    process.env.NEXT_PUBLIC_API_URL || "/api/v1"
+                }/past-questions`,
+                {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include",
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                }
+            );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw error;
-      }
+            if (!response.ok) {
+                const error = await response.json();
+                throw error;
+            }
 
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: pastQuestionKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: pastQuestionKeys.byCourse(data.courseId),
-      });
-    },
-    onError: (error) => {
-      showApiError(error);
-    },
-  });
+            return await response.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({
+                queryKey: pastQuestionKeys.lists(),
+            });
+            queryClient.invalidateQueries({
+                queryKey: pastQuestionKeys.byCourse(data.courseId),
+            });
+        },
+        onError: (error) => {
+            showApiError(error);
+        },
+    });
 }
 
 // Hook to delete a past question

@@ -56,6 +56,7 @@ import {
 import FileUploader from "../file-uploader";
 import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Import your hooks
 import {
@@ -63,14 +64,20 @@ import {
     useUploadMaterial,
     useDeleteMaterial,
 } from "@/hooks/use-materials";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+    useDeletePastQuestion,
+    usePastQuestions,
+    useUploadPastQuestion,
+} from "@/hooks/use-past-questions";
 
 export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
+    const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [formData, setFormData] = useState<MaterialInput>({
         title: "",
         courseId: "",
         file: null,
+        type: "material",
     });
 
     // React Query Hooks
@@ -86,6 +93,16 @@ export function ContentManagement() {
     });
 
     const {
+        data: pastQuestionsResponse,
+        isLoading: pastQuestionsLoading,
+        error: pastQuestionsError,
+        refetch: refetchPastQuestions,
+    } = usePastQuestions({
+        search: undefined,
+        limit: 50,
+    });
+
+    const {
         data: coursesResponse,
         isLoading,
         error,
@@ -95,19 +112,27 @@ export function ContentManagement() {
         limit: 50,
     });
 
-
-
     const queryClient = useQueryClient();
     const uploadMaterialMutation = useUploadMaterial();
-    const deleteMaterialMutation = useDeleteMaterial();
+    // const deleteMaterialMutation = useDeleteMaterial();
+    const uploadPastQuestionMutation = useUploadPastQuestion();
+    // const deletePastQuestionMutation = useDeletePastQuestion();
 
     const materials = materialsResponse?.materials || [];
-    const totalMaterials = materialsResponse?.total || 0;
+    // const totalMaterials = materialsResponse?.total || 0;
+    const pastQuestions = pastQuestionsResponse?.pastQuestions || [];
+    // const totalPastQuestions = pastQuestionsResponse?.total || 0;
     const courses = coursesResponse?.courses || [];
 
     // Handle form submission for creating/updating courses
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        console.log("Form data before submission:", formData);
+
+        if (!formData.type) {
+            return;
+        }
 
         if (!formData.title.trim()) {
             //   toast({
@@ -119,63 +144,27 @@ export function ContentManagement() {
         }
 
         try {
-            // Reset form and close dialog
-            await uploadMaterialMutation.mutateAsync(formData);
-
+            if (formData.type === "material") {
+                await uploadMaterialMutation.mutateAsync(formData);
+                queryClient.invalidateQueries({ queryKey: ["materials"] });
+            } else {
+                await uploadPastQuestionMutation.mutateAsync(formData);
+                queryClient.invalidateQueries({ queryKey: ["pastQuestions"] });
+            }
             setFormData({
                 title: "",
                 courseId: "",
                 file: null,
             });
-            queryClient.invalidateQueries({ queryKey: ["materials"] });
         } catch (error) {
             // Error is handled by the mutation's onError
             console.log("Error uploading material:", error);
         }
     };
 
-    // Handle file upload complete
     const handleFileUploadComplete = (url: string) => {
         setFormData((prev) => ({ ...prev, file: url }));
     };
-
-    const pastQuestions = [
-        {
-            id: "1",
-            title: "MTE 301 Past Question 2023",
-            courseCode: "MTE 301",
-            year: 2023,
-            fileType: "pdf",
-        },
-        {
-            id: "2",
-            title: "MTE 301 Past Question 2022",
-            courseCode: "MTE 301",
-            year: 2022,
-            fileType: "pdf",
-        },
-        {
-            id: "3",
-            title: "MTE 303 Past Question 2023",
-            courseCode: "MTE 303",
-            year: 2023,
-            fileType: "pdf",
-        },
-        {
-            id: "4",
-            title: "MTE 305 Past Question 2023",
-            courseCode: "MTE 305",
-            year: 2023,
-            fileType: "pdf",
-        },
-        {
-            id: "5",
-            title: "MTE 307 Past Question 2023",
-            courseCode: "MTE 307",
-            year: 2023,
-            fileType: "pdf",
-        },
-    ];
 
     return (
         <>
@@ -213,7 +202,15 @@ export function ContentManagement() {
                                         >
                                             Content Type
                                         </Label>
-                                        <Select>
+                                        <Select
+                                            value={formData.type ?? ""}
+                                            onValueChange={(value) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    type: value,
+                                                })
+                                            }
+                                        >
                                             <SelectTrigger className="col-span-3">
                                                 <SelectValue placeholder="Select type" />
                                             </SelectTrigger>
@@ -225,12 +222,6 @@ export function ContentManagement() {
                                                     <SelectItem
                                                         key={type}
                                                         value={type}
-                                                        onSelect={() =>
-                                                            setFormData({
-                                                                ...formData,
-                                                                type,
-                                                            })
-                                                        }
                                                     >
                                                         {type === "material"
                                                             ? "Course Material"
@@ -248,7 +239,7 @@ export function ContentManagement() {
                                             Course
                                         </Label>
                                         <Select
-                                            value={formData.courseId}
+                                            value={formData.courseId ?? ""}
                                             onValueChange={(value) =>
                                                 setFormData({
                                                     ...formData,
@@ -305,10 +296,6 @@ export function ContentManagement() {
                                                 onUploadComplete={
                                                     handleFileUploadComplete
                                                 }
-                                                //  onUploadComplete={
-                                                //      handleFileUploadComplete
-                                                //  }
-                                                //  initialImageUrl={formData.avatar}
                                             />
                                         </div>
                                     </div>
@@ -317,14 +304,17 @@ export function ContentManagement() {
                                     <Button
                                         type="submit"
                                         disabled={
-                                            uploadMaterialMutation.isPending
+                                            uploadMaterialMutation.isPending ||
+                                            uploadPastQuestionMutation.isPending
                                         }
                                     >
-                                        {uploadMaterialMutation.isPending && (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        )}
+                                        {uploadMaterialMutation.isPending ||
+                                            (uploadPastQuestionMutation.isPending && (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            ))}
 
-                                        {uploadMaterialMutation.isPending
+                                        {uploadMaterialMutation.isPending ||
+                                        uploadPastQuestionMutation.isPending
                                             ? "Uploading..."
                                             : "Upload"}
                                     </Button>
@@ -391,7 +381,7 @@ export function ContentManagement() {
                                             <TableRow>
                                                 <TableHead>Title</TableHead>
                                                 <TableHead>Course</TableHead>
-                                                <TableHead>File Type</TableHead>
+
                                                 <TableHead>
                                                     Upload Date
                                                 </TableHead>
@@ -408,9 +398,6 @@ export function ContentManagement() {
                                                     </TableCell>
                                                     <TableCell>
                                                         {material.course.code}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {material?.fileType?.toUpperCase()}
                                                     </TableCell>
                                                     <TableCell>
                                                         {material.createdAt}
@@ -463,11 +450,11 @@ export function ContentManagement() {
                                         className="pl-8"
                                     />
                                 </div>
-                                {error && (
+                                {pastQuestionsError && (
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => refetch()}
+                                        onClick={() => refetchPastQuestions()}
                                         className="ml-2"
                                     >
                                         Retry
@@ -476,7 +463,7 @@ export function ContentManagement() {
                             </div>
 
                             {/* Error State */}
-                            {error && (
+                            {pastQuestionsError && (
                                 <div className="py-4 text-center text-red-600">
                                     Failed to load past questions. Please try
                                     again.
@@ -484,7 +471,7 @@ export function ContentManagement() {
                             )}
 
                             {/* Loading State */}
-                            {isLoading && (
+                            {pastQuestionsLoading && (
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                                     Loading past questions...
@@ -492,7 +479,7 @@ export function ContentManagement() {
                             )}
 
                             {/* PastQuestions Table */}
-                            {!isLoading && !error && (
+                            {!pastQuestionsLoading && !pastQuestionsError && (
                                 <div className="rounded border">
                                     <Table>
                                         <TableHeader>
@@ -500,7 +487,6 @@ export function ContentManagement() {
                                                 <TableHead>Title</TableHead>
                                                 <TableHead>Course</TableHead>
                                                 <TableHead>Year</TableHead>
-                                                <TableHead>File Type</TableHead>
                                                 <TableHead className="text-right">
                                                     Actions
                                                 </TableHead>
@@ -513,13 +499,10 @@ export function ContentManagement() {
                                                         {question.title}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {question.courseCode}
+                                                        {question.title}
                                                     </TableCell>
                                                     <TableCell>
                                                         {question.year}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {question.fileType.toUpperCase()}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <DropdownMenu>

@@ -5,14 +5,6 @@ import { CircleUserRoundIcon, FileTextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useFileUpload from "@/hooks/useFileUpload";
 
-// Import your hooks
-import {
-    useMaterials,
-    useUploadMaterial,
-    useDeleteMaterial,
-    type MaterialInput,
-} from "@/hooks/use-materials";
-
 interface FileUploaderProps {
     uploadPreset: string;
     folder?: string;
@@ -68,7 +60,6 @@ export default function FileUploader({
                 uploadPreset,
                 folder ? { folder } : {}
             );
-            console.log("File uploaded successfully:", url);
             if (url) setPreviewUrl(url);
         } catch (err) {
             console.error("Upload failed", err);
