@@ -1,10 +1,9 @@
 import {
-  Briefcase,
-  Clock,
-  Compass,
-  GraduationCap,
-  LayoutDashboard,
-  MessageSquare,
+    Briefcase,
+    Compass,
+    GraduationCap,
+    LayoutDashboard,
+    MessageSquare,
 } from "lucide-react";
 
 import type { Bookmark, Course, User } from "@/types";
