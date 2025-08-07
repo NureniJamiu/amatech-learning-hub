@@ -4,10 +4,13 @@ import { comparePasswords } from "@/utils/hash";
 import { generateAuthToken } from "@/utils/token";
 
 export async function POST(req: NextRequest) {
+  console.log("Login route hit");
   try {
     const { email, password } = await req.json();
+    console.log("Login attempt for email:", email);
 
     if (!email || !password) {
+      console.log("Missing email or password");
       return NextResponse.json(
         { message: "All fields are required" },
         { status: 400 }
@@ -15,7 +18,10 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
+    console.log("User found:", !!user);
+
     if (!user) {
+      console.log("User not found");
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 400 }
@@ -23,7 +29,10 @@ export async function POST(req: NextRequest) {
     }
 
     const isValid = await comparePasswords(password, user.password);
+    console.log("Password valid:", isValid);
+
     if (!isValid) {
+      console.log("Invalid password");
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 400 }
@@ -31,6 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = generateAuthToken(user.id);
+    console.log("Token generated successfully");
 
     return NextResponse.json({
       token,
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

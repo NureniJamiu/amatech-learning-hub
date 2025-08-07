@@ -4,6 +4,57 @@ import { NextRequest, NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
 
+// GET /api/courses/[id] - Get a single course by ID
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ courseId: string }> }
+) {
+    try {
+        const { courseId } = await params;
+
+        if (!courseId) {
+            return NextResponse.json(
+                { message: "Course ID is required" },
+                { status: 400 }
+            );
+        }
+
+        const course = await prisma.course.findUnique({
+            where: { id: courseId },
+            include: {
+                tutors: {
+                    include: {
+                        tutor: true,
+                    },
+                },
+                materials: true,
+                pastQuestions: true,
+            },
+        });
+
+        if (!course) {
+            return NextResponse.json(
+                { message: "Course not found" },
+                { status: 404 }
+            );
+        }
+
+        // Transform data to match our frontend types
+        const transformedCourse = {
+            ...course,
+            tutors: course.tutors.map((ct) => ct.tutor),
+        };
+
+        return NextResponse.json(transformedCourse);
+    } catch (error) {
+        console.error("Error fetching course:", error);
+        return NextResponse.json(
+            { message: "Failed to fetch course" },
+            { status: 500 }
+        );
+    }
+}
+
 // PUT /api/courses/[id] - Update a tutor by ID (admin only)
 export async function PUT(
     request: NextRequest,

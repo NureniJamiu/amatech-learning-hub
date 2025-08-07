@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateRequest } from "@/middleware/auth.middleware";
+import { requireAuth, requireAdmin } from "@/middleware/auth.middleware";
 import { isAdminUser } from "@/helpers";
 
 // GET /api/courses - Get all courses with optional filtering
 export async function GET(request: NextRequest) {
+    console.log("Courses GET route hit");
     try {
-        // const authUser = authenticateRequest(request);
-        // if (!authUser || !authUser.userId) {
-        //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-        // }
+        // Authentication is optional for GET courses - all users can view courses
 
+        // Test basic Prisma connection first
+        console.log("Testing Prisma connection...");
+        const courseCount = await prisma.course.count();
+        console.log("Total courses in database:", courseCount);
+
+        // Now try the full query
         const { searchParams } = new URL(request.url);
+        console.log(
+            "Search params:",
+            Object.fromEntries(searchParams.entries())
+        );
+
         const level = searchParams.get("level")
             ? Number.parseInt(searchParams.get("level")!)
             : undefined;
@@ -27,6 +36,15 @@ export async function GET(request: NextRequest) {
             : 10;
         const skip = (page - 1) * limit;
 
+        console.log("Query parameters:", {
+            level,
+            semester,
+            search,
+            page,
+            limit,
+            skip,
+        });
+
         // Build filter object
         const where: any = {};
         if (level) where.level = level;
@@ -38,8 +56,10 @@ export async function GET(request: NextRequest) {
             ];
         }
 
+        console.log("Where clause:", where);
+
         // Get courses with pagination
-        const [courses, total] = await Promise.all([
+        const [fullCourses, total] = await Promise.all([
             prisma.course.findMany({
                 where,
                 skip,
@@ -58,8 +78,15 @@ export async function GET(request: NextRequest) {
             prisma.course.count({ where }),
         ]);
 
+        console.log(
+            "Full courses query successful, found:",
+            fullCourses.length,
+            "Total:",
+            total
+        );
+
         // Transform data to match our frontend types
-        const transformedCourses = courses.map((course) => ({
+        const transformedCourses = fullCourses.map((course) => ({
             ...course,
             tutors: course.tutors.map((ct) => ct.tutor),
         }));
@@ -67,6 +94,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ courses: transformedCourses, total });
     } catch (error) {
         console.error("Error fetching courses:", error);
+        console.error("Error details:", {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+        });
         return NextResponse.json(
             { message: "Failed to fetch courses" },
             { status: 500 }
@@ -77,23 +109,11 @@ export async function GET(request: NextRequest) {
 // POST /api/courses - Create a new course (admin only)
 export async function POST(request: NextRequest) {
     try {
-        // const authUser = authenticateRequest(request);
-        // if (!authUser || !authUser.userId) {
-        //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-        // }
-
-        // const isAdmin = await isAdminUser(authUser.userId);
-        // console.log("isAdmin", isAdmin);
-
-        // if (!isAdmin) {
-        //     return NextResponse.json(
-        //         {
-        //             message:
-        //                 "Forbidden: Only an admin can perform this operation",
-        //         },
-        //         { status: 403 }
-        //     );
-        // }
+        // Require admin authentication
+        const authResult = await requireAdmin(request);
+        if (authResult instanceof NextResponse) {
+            return authResult; // Return the error response
+        }
 
         const body = await request.json();
         const { code, title, units, level, semester, description, tutorIds } =
@@ -106,14 +126,26 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Check if course with the same code already exists
+        const existingCourse = await prisma.course.findUnique({
+            where: { code },
+        });
+
+        if (existingCourse) {
+            return NextResponse.json(
+                { message: "A course with this code already exists" },
+                { status: 409 }
+            );
+        }
+
         const course = await prisma.course.create({
             data: {
                 code,
                 title,
-                units,
+                units: Number.parseInt(units) || 2,
                 level: Number.parseInt(level),
                 semester: Number.parseInt(semester),
-                description,
+                description: description || "",
             },
         });
 
