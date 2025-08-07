@@ -45,6 +45,17 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -114,21 +125,19 @@ export function ContentManagement() {
 
     const queryClient = useQueryClient();
     const uploadMaterialMutation = useUploadMaterial();
-    // const deleteMaterialMutation = useDeleteMaterial();
+    const deleteMaterialMutation = useDeleteMaterial();
     const uploadPastQuestionMutation = useUploadPastQuestion();
-    // const deletePastQuestionMutation = useDeletePastQuestion();
+    const deletePastQuestionMutation = useDeletePastQuestion();
 
     const materials = materialsResponse?.materials || [];
-    // const totalMaterials = materialsResponse?.total || 0;
+    const totalMaterials = materialsResponse?.total || 0;
     const pastQuestions = pastQuestionsResponse?.pastQuestions || [];
-    // const totalPastQuestions = pastQuestionsResponse?.total || 0;
+    const totalPastQuestions = pastQuestionsResponse?.total || 0;
     const courses = coursesResponse?.courses || [];
 
-    // Handle form submission for creating/updating courses
+    // Handle form submission for creating/updating content
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        console.log("Form data before submission:", formData);
 
         if (!formData.type) {
             return;
@@ -143,22 +152,84 @@ export function ContentManagement() {
             return;
         }
 
+        if (!formData.courseId) {
+            //   toast({
+            //     title: "Validation Error",
+            //     description: "Course is required",
+            //     variant: "destructive",
+            //   });
+            return;
+        }
+
+        if (!formData.file) {
+            //   toast({
+            //     title: "Validation Error",
+            //     description: "File is required",
+            //     variant: "destructive",
+            //   });
+            return;
+        }
+
         try {
             if (formData.type === "material") {
                 await uploadMaterialMutation.mutateAsync(formData);
-                queryClient.invalidateQueries({ queryKey: ["materials"] });
+                // toast({
+                //   title: "Success",
+                //   description: "Material uploaded successfully",
+                // });
             } else {
                 await uploadPastQuestionMutation.mutateAsync(formData);
-                queryClient.invalidateQueries({ queryKey: ["pastQuestions"] });
+                // toast({
+                //   title: "Success",
+                //   description: "Past question uploaded successfully",
+                // });
             }
+
+            // Reset form
             setFormData({
                 title: "",
                 courseId: "",
                 file: null,
+                type: "material",
             });
+            // Query invalidation is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
-            console.log("Error uploading material:", error);
+            console.log("Error uploading content:", error);
+        }
+    };
+
+    // Handle delete material
+    const handleDeleteMaterial = async (
+        materialId: string,
+        materialTitle: string
+    ) => {
+        try {
+            await deleteMaterialMutation.mutateAsync(materialId);
+            // toast({
+            //   title: "Success",
+            //   description: `${materialTitle} deleted successfully`,
+            // });
+            // Query invalidation is now handled by the mutation hooks
+        } catch (error) {
+            // Error is handled by the mutation's onError
+        }
+    };
+
+    // Handle delete past question
+    const handleDeletePastQuestion = async (
+        questionId: string,
+        questionTitle: string
+    ) => {
+        try {
+            await deletePastQuestionMutation.mutateAsync(questionId);
+            // toast({
+            //   title: "Success",
+            //   description: `${questionTitle} deleted successfully`,
+            // });
+            // Query invalidation is now handled by the mutation hooks
+        } catch (error) {
+            // Error is handled by the mutation's onError
         }
     };
 
@@ -331,10 +402,10 @@ export function ContentManagement() {
                     >
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="materials">
-                                Course Materials
+                                Course Materials ({totalMaterials})
                             </TabsTrigger>
                             <TabsTrigger value="pastQuestions">
-                                Past Questions
+                                Past Questions ({totalPastQuestions})
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="materials">
@@ -381,7 +452,6 @@ export function ContentManagement() {
                                             <TableRow>
                                                 <TableHead>Title</TableHead>
                                                 <TableHead>Course</TableHead>
-
                                                 <TableHead>
                                                     Upload Date
                                                 </TableHead>
@@ -391,51 +461,138 @@ export function ContentManagement() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {materials.map((material) => (
-                                                <TableRow key={material.id}>
-                                                    <TableCell className="font-medium">
-                                                        {material.title}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {material.course.code}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {material.createdAt}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <span className="sr-only">
-                                                                        Open
-                                                                        menu
-                                                                    </span>
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>
-                                                                    Actions
-                                                                </DropdownMenuLabel>
-                                                                <DropdownMenuItem>
-                                                                    <FileText className="mr-2 h-4 w-4" />
-                                                                    View
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="text-red-600">
-                                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                            {materials.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={4}
+                                                        className="text-center py-8 text-muted-foreground"
+                                                    >
+                                                        No materials found.
+                                                        Upload one to get
+                                                        started.
                                                     </TableCell>
                                                 </TableRow>
-                                            ))}
+                                            ) : (
+                                                materials.map((material) => (
+                                                    <TableRow key={material.id}>
+                                                        <TableCell className="font-medium">
+                                                            {material.title}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {material.course
+                                                                ?.code || "N/A"}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {new Date(
+                                                                material.createdAt
+                                                            ).toLocaleDateString()}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 p-0"
+                                                                    >
+                                                                        <span className="sr-only">
+                                                                            Open
+                                                                            menu
+                                                                        </span>
+                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuLabel>
+                                                                        Actions
+                                                                    </DropdownMenuLabel>
+                                                                    <DropdownMenuItem>
+                                                                        <FileText className="mr-2 h-4 w-4" />
+                                                                        View
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator />
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <DropdownMenuItem
+                                                                                className="text-red-600"
+                                                                                onSelect={(
+                                                                                    e
+                                                                                ) =>
+                                                                                    e.preventDefault()
+                                                                                }
+                                                                            >
+                                                                                {deleteMaterialMutation.isPending ? (
+                                                                                    <>
+                                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                                        Deleting...
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                                                        Delete
+                                                                                    </>
+                                                                                )}
+                                                                            </DropdownMenuItem>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle>
+                                                                                    Are
+                                                                                    you
+                                                                                    sure?
+                                                                                </AlertDialogTitle>
+                                                                                <AlertDialogDescription>
+                                                                                    This
+                                                                                    will
+                                                                                    permanently
+                                                                                    delete
+                                                                                    the
+                                                                                    material
+                                                                                    "
+                                                                                    {
+                                                                                        material.title
+                                                                                    }
+                                                                                    ".
+                                                                                    This
+                                                                                    action
+                                                                                    cannot
+                                                                                    be
+                                                                                    undone.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel>
+                                                                                    Cancel
+                                                                                </AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    className="bg-red-600 hover:bg-red-700"
+                                                                                    onClick={() =>
+                                                                                        handleDeleteMaterial(
+                                                                                            material.id,
+                                                                                            material.title
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={
+                                                                                        deleteMaterialMutation.isPending
+                                                                                    }
+                                                                                >
+                                                                                    {deleteMaterialMutation.isPending ? (
+                                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                                    ) : null}
+                                                                                    Delete
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -493,51 +650,142 @@ export function ContentManagement() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {pastQuestions.map((question) => (
-                                                <TableRow key={question.id}>
-                                                    <TableCell className="font-medium">
-                                                        {question.title}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {question.title}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {question.year}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <span className="sr-only">
-                                                                        Open
-                                                                        menu
-                                                                    </span>
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>
-                                                                    Actions
-                                                                </DropdownMenuLabel>
-                                                                <DropdownMenuItem>
-                                                                    <FileText className="mr-2 h-4 w-4" />
-                                                                    View
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="text-red-600">
-                                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                            {pastQuestions.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={4}
+                                                        className="text-center py-8 text-muted-foreground"
+                                                    >
+                                                        No past questions found.
+                                                        Upload one to get
+                                                        started.
                                                     </TableCell>
                                                 </TableRow>
-                                            ))}
+                                            ) : (
+                                                pastQuestions.map(
+                                                    (question) => (
+                                                        <TableRow
+                                                            key={question.id}
+                                                        >
+                                                            <TableCell className="font-medium">
+                                                                {question.title}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {question.course
+                                                                    ?.code ||
+                                                                    "N/A"}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {question.year}
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            className="h-8 w-8 p-0"
+                                                                        >
+                                                                            <span className="sr-only">
+                                                                                Open
+                                                                                menu
+                                                                            </span>
+                                                                            <MoreHorizontal className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end">
+                                                                        <DropdownMenuLabel>
+                                                                            Actions
+                                                                        </DropdownMenuLabel>
+                                                                        <DropdownMenuItem>
+                                                                            <FileText className="mr-2 h-4 w-4" />
+                                                                            View
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator />
+                                                                        <AlertDialog>
+                                                                            <AlertDialogTrigger
+                                                                                asChild
+                                                                            >
+                                                                                <DropdownMenuItem
+                                                                                    className="text-red-600"
+                                                                                    onSelect={(
+                                                                                        e
+                                                                                    ) =>
+                                                                                        e.preventDefault()
+                                                                                    }
+                                                                                >
+                                                                                    {deletePastQuestionMutation.isPending ? (
+                                                                                        <>
+                                                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                                            Deleting...
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                                                            Delete
+                                                                                        </>
+                                                                                    )}
+                                                                                </DropdownMenuItem>
+                                                                            </AlertDialogTrigger>
+                                                                            <AlertDialogContent>
+                                                                                <AlertDialogHeader>
+                                                                                    <AlertDialogTitle>
+                                                                                        Are
+                                                                                        you
+                                                                                        sure?
+                                                                                    </AlertDialogTitle>
+                                                                                    <AlertDialogDescription>
+                                                                                        This
+                                                                                        will
+                                                                                        permanently
+                                                                                        delete
+                                                                                        the
+                                                                                        past
+                                                                                        question
+                                                                                        "
+                                                                                        {
+                                                                                            question.title
+                                                                                        }
+                                                                                        ".
+                                                                                        This
+                                                                                        action
+                                                                                        cannot
+                                                                                        be
+                                                                                        undone.
+                                                                                    </AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                    <AlertDialogCancel>
+                                                                                        Cancel
+                                                                                    </AlertDialogCancel>
+                                                                                    <AlertDialogAction
+                                                                                        className="bg-red-600 hover:bg-red-700"
+                                                                                        onClick={() =>
+                                                                                            handleDeletePastQuestion(
+                                                                                                question.id,
+                                                                                                question.title
+                                                                                            )
+                                                                                        }
+                                                                                        disabled={
+                                                                                            deletePastQuestionMutation.isPending
+                                                                                        }
+                                                                                    >
+                                                                                        {deletePastQuestionMutation.isPending ? (
+                                                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                                        ) : null}
+                                                                                        Delete
+                                                                                    </AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                            </AlertDialogContent>
+                                                                        </AlertDialog>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )
+                                                )
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>

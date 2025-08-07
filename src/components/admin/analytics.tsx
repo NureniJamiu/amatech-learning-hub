@@ -1,6 +1,10 @@
 "use client";
 
-import { BarChart, LineChart } from "lucide-react";
+import { BarChart, LineChart, Users, BookOpen, FileText, GraduationCap } from "lucide-react";
+import { useCourses } from "@/hooks/use-courses";
+import { useMaterials } from "@/hooks/use-materials";
+import { usePastQuestions } from "@/hooks/use-past-questions";
+import { useTutors } from "@/hooks/use-tutors";
 
 import {
   Card,
@@ -12,122 +16,119 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Analytics() {
-  // Mock data for charts
-  const userActivityData = [
-    { month: "Jan", students: 120, lecturers: 15 },
-    { month: "Feb", students: 150, lecturers: 18 },
-    { month: "Mar", students: 180, lecturers: 20 },
-    { month: "Apr", students: 220, lecturers: 22 },
-    { month: "May", students: 250, lecturers: 25 },
-    { month: "Jun", students: 280, lecturers: 28 },
+  // Real data from our hooks
+  const { data: coursesResponse, isLoading: coursesLoading } = useCourses({ limit: 1000 });
+  const { data: materialsResponse, isLoading: materialsLoading } = useMaterials({ limit: 1000 });
+  const { data: pastQuestionsResponse, isLoading: pastQuestionsLoading } = usePastQuestions({ limit: 1000 });
+  const { data: tutorsResponse, isLoading: tutorsLoading } = useTutors({ limit: 1000 });
+
+  // Extract data
+  const courses = coursesResponse?.courses || [];
+  const materials = materialsResponse?.materials || [];
+  const pastQuestions = pastQuestionsResponse?.pastQuestions || [];
+  const tutors = tutorsResponse?.tutors || [];
+
+  // Calculate analytics
+  const totalCourses = courses.length;
+  const totalMaterials = materials.length;
+  const totalPastQuestions = pastQuestions.length;
+  const totalTutors = tutors.length;
+
+  // Calculate course usage (materials per course)
+  const courseUsageData = courses.map(course => {
+    const courseMaterials = materials.filter(material => material.course?.code === course.code);
+    const coursePastQuestions = pastQuestions.filter(pq => pq.course?.code === course.code);
+    return {
+      course: course.code,
+      materials: courseMaterials.length,
+      pastQuestions: coursePastQuestions.length,
+      totalContent: courseMaterials.length + coursePastQuestions.length
+    };
+  }).sort((a, b) => b.totalContent - a.totalContent).slice(0, 5);
+
+  // Calculate content distribution
+  const contentDistribution = [
+    { name: "Course Materials", value: totalMaterials, color: "bg-blue-500" },
+    { name: "Past Questions", value: totalPastQuestions, color: "bg-green-500" },
   ];
 
-  const courseUsageData = [
-    { course: "MTE 301", downloads: 85, views: 120 },
-    { course: "MTE 303", downloads: 65, views: 95 },
-    { course: "MTE 305", downloads: 75, views: 110 },
-    { course: "MTE 307", downloads: 55, views: 80 },
-    { course: "MTE 309", downloads: 45, views: 70 },
-  ];
+  // Calculate level distribution
+  const levelDistribution = courses.reduce((acc, course) => {
+    acc[course.level] = (acc[course.level] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
+  const isLoading = coursesLoading || materialsLoading || pastQuestionsLoading || tutorsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
+            <div className="text-2xl font-bold">{totalCourses}</div>
             <p className="text-xs text-muted-foreground">
-              +12% from last month
+              {totalCourses > 0 ? `${totalCourses} courses available` : "No courses yet"}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Courses
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Course Materials</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
+            <div className="text-2xl font-bold">{totalMaterials}</div>
             <p className="text-xs text-muted-foreground">
-              +2 new courses this week
+              {totalMaterials > 0 ? `${totalMaterials} materials uploaded` : "No materials yet"}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Downloads</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Past Questions</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,845</div>
+            <div className="text-2xl font-bold">{totalPastQuestions}</div>
             <p className="text-xs text-muted-foreground">
-              +18% from last month
+              {totalPastQuestions > 0 ? `${totalPastQuestions} past questions` : "No past questions yet"}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Sessions
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Total Tutors</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">124</div>
+            <div className="text-2xl font-bold">{totalTutors}</div>
             <p className="text-xs text-muted-foreground">
-              Current active users
+              {totalTutors > 0 ? `${totalTutors} tutors registered` : "No tutors yet"}
             </p>
           </CardContent>
         </Card>
@@ -136,40 +137,76 @@ export function Analytics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>User Activity</CardTitle>
+            <CardTitle>Course Usage Analytics</CardTitle>
             <CardDescription>
-              Monthly active users over the last 6 months
+              Most content-rich courses (materials + past questions)
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-[300px] w-full flex items-center justify-center">
-              <LineChart className="h-16 w-16 text-muted-foreground" />
-              <div className="ml-4 text-sm text-muted-foreground">
-                <p>This is a placeholder for the user activity chart.</p>
-                <p>
-                  In a real application, this would display a line chart showing
-                  user activity over time.
-                </p>
+            {courseUsageData.length > 0 ? (
+              <div className="space-y-4">
+                {courseUsageData.map((course, index) => (
+                  <div key={course.course} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium">{course.course}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {course.materials} materials, {course.pastQuestions} past questions
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{course.totalContent}</p>
+                      <p className="text-xs text-muted-foreground">total items</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="h-[300px] w-full flex items-center justify-center">
+                <div className="text-center">
+                  <BarChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No course data available</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Course Usage</CardTitle>
-            <CardDescription>Most accessed courses</CardDescription>
+            <CardTitle>Content Distribution</CardTitle>
+            <CardDescription>Materials vs Past Questions</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full flex items-center justify-center">
-              <BarChart className="h-16 w-16 text-muted-foreground" />
-              <div className="ml-4 text-sm text-muted-foreground">
-                <p>This is a placeholder for the course usage chart.</p>
-                <p>
-                  In a real application, this would display a bar chart showing
-                  course usage statistics.
-                </p>
+            {contentDistribution.some(item => item.value > 0) ? (
+              <div className="space-y-4">
+                {contentDistribution.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </div>
+                    <span className="text-sm font-bold">{item.value}</span>
+                  </div>
+                ))}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Content</span>
+                    <span className="text-sm font-bold">{totalMaterials + totalPastQuestions}</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="h-[300px] w-full flex items-center justify-center">
+                <div className="text-center">
+                  <BarChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No content data available</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -180,46 +217,121 @@ export function Analytics() {
           <CardDescription>View detailed analytics by category</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="users">
+          <Tabs defaultValue="courses">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="tutors">Tutors</TabsTrigger>
             </TabsList>
-            <TabsContent value="users" className="p-4">
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium mb-2">
-                  User Analytics Dashboard
-                </h3>
-                <p className="text-muted-foreground">
-                  This section would contain detailed user analytics including
-                  registration trends, login frequency, user demographics, and
-                  engagement metrics.
-                </p>
-              </div>
-            </TabsContent>
             <TabsContent value="courses" className="p-4">
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium mb-2">
-                  Course Analytics Dashboard
-                </h3>
-                <p className="text-muted-foreground">
-                  This section would contain detailed course analytics including
-                  enrollment statistics, completion rates, most popular courses,
-                  and student performance metrics.
-                </p>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Course Level Distribution</h3>
+                  <div className="grid gap-4 md:grid-cols-5">
+                    {Object.entries(levelDistribution).map(([level, count]) => (
+                      <Card key={level}>
+                        <CardContent className="p-4 text-center">
+                          <div className="text-2xl font-bold">{count}</div>
+                          <p className="text-sm text-muted-foreground">Level {level}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Course Details</h3>
+                  <div className="space-y-2">
+                    {courses.map((course) => {
+                      const courseMaterials = materials.filter(m => m.course?.code === course.code);
+                      const coursePastQuestions = pastQuestions.filter(pq => pq.course?.code === course.code);
+                      return (
+                        <div key={course.id} className="flex items-center justify-between p-3 border rounded">
+                          <div>
+                            <p className="font-medium">{course.code} - {course.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Level {course.level}, Semester {course.semester}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">{courseMaterials.length} materials</p>
+                            <p className="text-sm text-muted-foreground">{coursePastQuestions.length} past questions</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </TabsContent>
             <TabsContent value="content" className="p-4">
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium mb-2">
-                  Content Analytics Dashboard
-                </h3>
-                <p className="text-muted-foreground">
-                  This section would contain detailed content analytics
-                  including download statistics, view counts, most accessed
-                  materials, and content engagement metrics.
-                </p>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Content Overview</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Course Materials</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold mb-2">{totalMaterials}</div>
+                        <p className="text-muted-foreground">Total materials uploaded</p>
+                        {materials.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <p className="text-sm font-medium">Recent Materials:</p>
+                            {materials.slice(0, 3).map((material) => (
+                              <div key={material.id} className="text-sm text-muted-foreground">
+                                • {material.title} ({material.course?.code})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Past Questions</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold mb-2">{totalPastQuestions}</div>
+                        <p className="text-muted-foreground">Total past questions</p>
+                        {pastQuestions.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <p className="text-sm font-medium">Recent Past Questions:</p>
+                            {pastQuestions.slice(0, 3).map((question) => (
+                              <div key={question.id} className="text-sm text-muted-foreground">
+                                • {question.title} ({question.year})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="tutors" className="p-4">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Tutor Overview</h3>
+                  <div className="text-3xl font-bold mb-2">{totalTutors}</div>
+                  <p className="text-muted-foreground">Total tutors registered</p>
+                </div>
+                {tutors.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Tutor List</h3>
+                    <div className="space-y-2">
+                      {tutors.map((tutor) => (
+                        <div key={tutor.id} className="flex items-center justify-between p-3 border rounded">
+                          <div>
+                            <p className="font-medium">{tutor.name}</p>
+                            <p className="text-sm text-muted-foreground">{tutor.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

@@ -9,7 +9,7 @@ import {
     Trash2,
     Loader2,
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 // import { toast } from "@/components/ui/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -166,7 +166,7 @@ export function CourseManagement() {
             });
             setIsCreateDialogOpen(false);
             setEditingCourse(null);
-            queryClient.invalidateQueries({ queryKey: ["courses"] });
+            // Query invalidation is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
         }
@@ -180,7 +180,7 @@ export function CourseManagement() {
             //     title: "Success",
             //     description: `${courseCode} deleted successfully`,
             //   });
-            queryClient.invalidateQueries({ queryKey: ["courses"] });
+            // Query invalidation is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
         }
