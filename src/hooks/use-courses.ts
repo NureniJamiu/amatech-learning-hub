@@ -133,13 +133,29 @@ export function useCreateCourse() {
         onMutate: async (newCourse) => {
             // Cancel any outgoing refetches for related queries
             await queryClient.cancelQueries({ queryKey: courseKeys.lists() });
-            await queryClient.cancelQueries({ queryKey: courseKeys.userLevel(newCourse.level) });
-            await queryClient.cancelQueries({ queryKey: courseKeys.userLevelSemester(newCourse.level, newCourse.semester) });
+            await queryClient.cancelQueries({
+                queryKey: courseKeys.userLevel(newCourse.level),
+            });
+            await queryClient.cancelQueries({
+                queryKey: courseKeys.userLevelSemester(
+                    newCourse.level,
+                    newCourse.semester
+                ),
+            });
 
             // Snapshot the previous values
-            const previousCourses = queryClient.getQueryData(courseKeys.lists());
-            const previousUserLevelCourses = queryClient.getQueryData(courseKeys.userLevel(newCourse.level));
-            const previousUserLevelSemesterCourses = queryClient.getQueryData(courseKeys.userLevelSemester(newCourse.level, newCourse.semester));
+            const previousCourses = queryClient.getQueryData(
+                courseKeys.lists()
+            );
+            const previousUserLevelCourses = queryClient.getQueryData(
+                courseKeys.userLevel(newCourse.level)
+            );
+            const previousUserLevelSemesterCourses = queryClient.getQueryData(
+                courseKeys.userLevelSemester(
+                    newCourse.level,
+                    newCourse.semester
+                )
+            );
 
             // Optimistically update multiple related queries
             const optimisticCourse = { ...newCourse, id: "temp-id" } as Course;
@@ -170,7 +186,10 @@ export function useCreateCourse() {
 
             // Update user level + semester courses
             queryClient.setQueryData(
-                courseKeys.userLevelSemester(newCourse.level, newCourse.semester),
+                courseKeys.userLevelSemester(
+                    newCourse.level,
+                    newCourse.semester
+                ),
                 (old: { courses: Course[]; total: number } | undefined) => {
                     if (!old) return { courses: [optimisticCourse], total: 1 };
                     return {
@@ -180,28 +199,105 @@ export function useCreateCourse() {
                 }
             );
 
-            return { previousCourses, previousUserLevelCourses, previousUserLevelSemesterCourses };
+            return {
+                previousCourses,
+                previousUserLevelCourses,
+                previousUserLevelSemesterCourses,
+            };
         },
         onError: (err, newCourse, context) => {
             // Rollback optimistic updates
             if (context?.previousCourses) {
-                queryClient.setQueriesData({ queryKey: courseKeys.lists() }, context.previousCourses);
+                queryClient.setQueriesData(
+                    { queryKey: courseKeys.lists() },
+                    context.previousCourses
+                );
             }
             if (context?.previousUserLevelCourses) {
-                queryClient.setQueryData(courseKeys.userLevel(newCourse.level), context.previousUserLevelCourses);
+                queryClient.setQueryData(
+                    courseKeys.userLevel(newCourse.level),
+                    context.previousUserLevelCourses
+                );
             }
             if (context?.previousUserLevelSemesterCourses) {
-                queryClient.setQueryData(courseKeys.userLevelSemester(newCourse.level, newCourse.semester), context.previousUserLevelSemesterCourses);
+                queryClient.setQueryData(
+                    courseKeys.userLevelSemester(
+                        newCourse.level,
+                        newCourse.semester
+                    ),
+                    context.previousUserLevelSemesterCourses
+                );
             }
             showApiError(err);
         },
+        onSuccess: (data, variables) => {
+            // Immediately update cache with the real course data to replace optimistic updates
+            queryClient.setQueriesData(
+                { queryKey: courseKeys.lists() },
+                (old: { courses: Course[]; total: number } | undefined) => {
+                    if (!old) return { courses: [data], total: 1 };
+                    // Replace the optimistic course with the real one
+                    const filteredCourses = old.courses.filter(
+                        (course) => course.id !== "temp-id"
+                    );
+                    return {
+                        courses: [data, ...filteredCourses],
+                        total: filteredCourses.length + 1,
+                    };
+                }
+            );
+
+            // Update level-specific queries
+            queryClient.setQueryData(
+                courseKeys.userLevel(data.level),
+                (old: { courses: Course[]; total: number } | undefined) => {
+                    if (!old) return { courses: [data], total: 1 };
+                    const filteredCourses = old.courses.filter(
+                        (course) => course.id !== "temp-id"
+                    );
+                    return {
+                        courses: [data, ...filteredCourses],
+                        total: filteredCourses.length + 1,
+                    };
+                }
+            );
+
+            // Update semester-specific queries
+            queryClient.setQueryData(
+                courseKeys.userLevelSemester(data.level, data.semester),
+                (old: { courses: Course[]; total: number } | undefined) => {
+                    if (!old) return { courses: [data], total: 1 };
+                    const filteredCourses = old.courses.filter(
+                        (course) => course.id !== "temp-id"
+                    );
+                    return {
+                        courses: [data, ...filteredCourses],
+                        total: filteredCourses.length + 1,
+                    };
+                }
+            );
+        },
         onSettled: (data, error, variables) => {
-            // Invalidate related queries
+            // Invalidate ALL course-related queries to ensure new courses appear everywhere
+            queryClient.invalidateQueries({ queryKey: courseKeys.all });
+
+            // Also invalidate specific queries that might be cached
             queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
-            queryClient.invalidateQueries({ queryKey: courseKeys.userLevel(variables.level) });
-            queryClient.invalidateQueries({ queryKey: courseKeys.userLevelSemester(variables.level, variables.semester) });
-            // Also invalidate infinite queries
-            queryClient.invalidateQueries({ queryKey: courseKeys.infinite({}) });
+            queryClient.invalidateQueries({
+                queryKey: courseKeys.userLevel(variables.level),
+            });
+            queryClient.invalidateQueries({
+                queryKey: courseKeys.userLevelSemester(
+                    variables.level,
+                    variables.semester
+                ),
+            });
+            queryClient.invalidateQueries({
+                queryKey: courseKeys.infinite({}),
+            });
+
+            // Force refresh of any course dropdowns or selectors
+            queryClient.refetchQueries({ queryKey: courseKeys.all });
         },
     });
 }

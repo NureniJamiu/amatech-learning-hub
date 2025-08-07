@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 // POST /api/courses/[courseId]/materials - Add materials to a specific course
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const authUser = authenticateRequest(request);
+    const authUser = await authenticateRequest(request);
     if (!authUser || !authUser.userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

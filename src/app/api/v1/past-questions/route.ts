@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 // POST /api/past-questions - Create a new material
 export async function POST(request: NextRequest) {
     try {
-        const authUser = authenticateRequest(request);
+        const authUser = await authenticateRequest(request);
         if (!authUser || !authUser.userId) {
             console.error("Unauthorized access attempt");
             return NextResponse.json(

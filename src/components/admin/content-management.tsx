@@ -69,6 +69,7 @@ import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
 import type { Material2 } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 // Import your hooks
 import {
@@ -86,6 +87,7 @@ import { useRecentlyAccessed } from "@/hooks/use-recently-accessed";
 export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const [formData, setFormData] = useState<MaterialInput>({
         title: "",
         courseId: "",
@@ -95,6 +97,26 @@ export function ContentManagement() {
 
     const { trackMaterialAccess, trackPastQuestionAccess } =
         useRecentlyAccessed();
+
+    // Listen for course creation to refresh the course list
+    useEffect(() => {
+        const handleCourseMutation = () => {
+            // Refetch courses when any course mutation happens
+            refetchCourses();
+        };
+
+        // Set up a listener for course cache invalidation
+        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+            if (
+                event.type === "updated" &&
+                event.query.queryKey[0] === "courses"
+            ) {
+                handleCourseMutation();
+            }
+        });
+
+        return unsubscribe;
+    }, [queryClient, refetchCourses]);
 
     // React Query Hooks
     const {
@@ -120,12 +142,12 @@ export function ContentManagement() {
 
     const {
         data: coursesResponse,
-        isLoading,
-        error,
-        refetch,
+        isLoading: coursesLoading,
+        error: coursesError,
+        refetch: refetchCourses,
     } = useCourses({
         search: undefined,
-        limit: 50,
+        limit: 100, // Increased limit to ensure new courses are included
     });
 
     const queryClient = useQueryClient();
@@ -190,14 +212,19 @@ export function ContentManagement() {
                 // });
             }
 
-            // Reset form
+            // Reset form and close dialog
             setFormData({
                 title: "",
                 courseId: "",
                 file: null,
                 type: "material",
             });
-            // Query invalidation is now handled by the mutation hooks
+            setIsUploadDialogOpen(false);
+
+            // Refresh courses to ensure material counts are updated
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
+
+            // Query invalidation for materials is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
             console.log("Error uploading content:", error);
@@ -242,6 +269,15 @@ export function ContentManagement() {
         setFormData((prev) => ({ ...prev, file: url }));
     };
 
+    // Handle opening the upload dialog - refetch courses to ensure latest data
+    const handleOpenUploadDialog = () => {
+        setIsUploadDialogOpen(true);
+        // Refetch courses to ensure we have the latest course list
+        refetchCourses();
+        // Also invalidate the courses cache to force a fresh fetch
+        queryClient.invalidateQueries({ queryKey: ["courses"] });
+    };
+
     // Handle view material
     const handleViewMaterial = (material: Material2) => {
         trackMaterialAccess(material);
@@ -274,9 +310,12 @@ export function ContentManagement() {
                             Manage course materials and past questions
                         </CardDescription>
                     </div>
-                    <Dialog>
+                    <Dialog
+                        open={isUploadDialogOpen}
+                        onOpenChange={setIsUploadDialogOpen}
+                    >
                         <DialogTrigger asChild>
-                            <Button>
+                            <Button onClick={handleOpenUploadDialog}>
                                 <FileUp className="mr-2 h-4 w-4" />
                                 Upload Content
                             </Button>
@@ -334,32 +373,83 @@ export function ContentManagement() {
                                         >
                                             Course
                                         </Label>
-                                        <Select
-                                            value={formData.courseId ?? ""}
-                                            onValueChange={(value) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    courseId: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select course" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {courses.map((course) => {
-                                                    return (
+                                        <div className="col-span-3 flex gap-2">
+                                            <Select
+                                                value={formData.courseId ?? ""}
+                                                onValueChange={(value) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        courseId: value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder="Select course" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {coursesLoading ? (
                                                         <SelectItem
-                                                            key={course.id}
-                                                            value={course.id}
+                                                            value=""
+                                                            disabled
                                                         >
-                                                            {course.code} -{" "}
-                                                            {course.title}
+                                                            Loading courses...
                                                         </SelectItem>
-                                                    );
-                                                })}
-                                            </SelectContent>
-                                        </Select>
+                                                    ) : coursesError ? (
+                                                        <SelectItem
+                                                            value=""
+                                                            disabled
+                                                        >
+                                                            Error loading
+                                                            courses
+                                                        </SelectItem>
+                                                    ) : courses.length === 0 ? (
+                                                        <SelectItem
+                                                            value=""
+                                                            disabled
+                                                        >
+                                                            No courses available
+                                                        </SelectItem>
+                                                    ) : (
+                                                        courses.map(
+                                                            (course) => {
+                                                                return (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            course.id
+                                                                        }
+                                                                        value={
+                                                                            course.id
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            course.code
+                                                                        }{" "}
+                                                                        -{" "}
+                                                                        {
+                                                                            course.title
+                                                                        }
+                                                                    </SelectItem>
+                                                                );
+                                                            }
+                                                        )
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => refetchCourses()}
+                                                disabled={coursesLoading}
+                                                className="whitespace-nowrap"
+                                            >
+                                                {coursesLoading ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    "Refresh"
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
                                         <Label

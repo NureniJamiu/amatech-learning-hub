@@ -123,31 +123,64 @@ export function useUploadMaterial() {
             // Cancel any outgoing refetches for all related queries
             await queryClient.cancelQueries({ queryKey: materialKeys.lists() });
             await queryClient.cancelQueries({
-                queryKey: materialKeys.byCourse(newMaterial.courseId)
+                queryKey: materialKeys.byCourse(newMaterial.courseId),
             });
 
+            // Get course information for optimistic update
+            const coursesQuery = queryClient.getQueriesData({
+                queryKey: ["courses"],
+            });
+            let courseInfo = { code: "Loading...", title: "Loading..." };
+
+            // Try to find the course in the cache
+            for (const [, data] of coursesQuery) {
+                if (data && typeof data === "object" && "courses" in data) {
+                    const courses = (data as any).courses;
+                    const foundCourse = courses?.find(
+                        (c: any) => c.id === newMaterial.courseId
+                    );
+                    if (foundCourse) {
+                        courseInfo = {
+                            code: foundCourse.code,
+                            title: foundCourse.title,
+                        };
+                        break;
+                    }
+                }
+            }
+
             // Snapshot the previous values
-            const previousMaterials = queryClient.getQueryData(materialKeys.lists());
+            const previousMaterials = queryClient.getQueryData(
+                materialKeys.lists()
+            );
             const previousCourseMaterials = queryClient.getQueryData(
                 materialKeys.byCourse(newMaterial.courseId)
             );
 
-            // Create optimistic material
+            // Create optimistic material with correct course info
             const optimisticMaterial = {
-                id: 'temp-id',
+                id: "temp-id",
                 title: newMaterial.title,
-                fileUrl: newMaterial.file || '',
-                fileType: 'pdf',
+                fileUrl: newMaterial.file || "",
+                fileType: "pdf",
                 createdAt: new Date().toISOString(),
-                course: { code: 'Loading...', title: 'Loading...' },
-                uploadedBy: { id: 'temp', firstname: 'Loading', lastname: '', email: '' }
+                course: courseInfo,
+                uploadedBy: {
+                    id: "temp",
+                    firstname: "Loading",
+                    lastname: "",
+                    email: "",
+                },
             } as Material2;
 
             // Optimistically update all material list queries
             queryClient.setQueriesData(
                 { queryKey: materialKeys.lists() },
-                (old: { materials: Material2[]; total: number } | undefined) => {
-                    if (!old) return { materials: [optimisticMaterial], total: 1 };
+                (
+                    old: { materials: Material2[]; total: number } | undefined
+                ) => {
+                    if (!old)
+                        return { materials: [optimisticMaterial], total: 1 };
                     return {
                         materials: [optimisticMaterial, ...old.materials], // Add to beginning for recent items
                         total: old.total + 1,
@@ -187,6 +220,9 @@ export function useUploadMaterial() {
             });
             // Also invalidate infinite queries
             queryClient.invalidateQueries({ queryKey: materialKeys.infinite({}) });
+
+            // Invalidate course queries to update material counts in course objects
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
         },
     });
 }
