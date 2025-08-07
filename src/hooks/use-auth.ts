@@ -4,38 +4,124 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, showApiError } from "@/lib/api-client";
 import type { User } from "@/types";
 import { useRouter } from "next/navigation";
+import { cookieUtils } from "@/utils/cookies";
 
 // Query keys for React Query
 export const authKeys = {
-  user: ["auth", "user"] as const,
+    user: ["auth", "user"] as const,
 };
 
 // Types
 export type LoginInput = {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 };
 
 export type RegisterInput = {
-  name: string;
-  email: string;
-  password: string;
-  passwordConfirmation: string;
-  matricNumber: string;
-  level: number;
-  department: string;
-  faculty: string;
+    name: string;
+    email: string;
+    password: string;
+    passwordConfirmation: string;
+    matricNumber: string;
+    level: number;
+    department: string;
+    faculty: string;
+};
+
+// Utility functions for user data management
+export const userStorage = {
+    getUser: (): User | null => {
+        try {
+            const userData = localStorage.getItem("user");
+            const token =
+                localStorage.getItem("token") || cookieUtils.get("token");
+
+            if (!userData || !token) {
+                return null;
+            }
+
+            return JSON.parse(userData) as User;
+        } catch (error) {
+            console.error("Error getting user from localStorage:", error);
+            return null;
+        }
+    },
+
+    setUser: (user: User, token: string) => {
+        try {
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("token", token);
+            // Also set the token as a cookie for middleware access
+            cookieUtils.set("token", token, 15); // 15 days expiration
+            console.log("User data stored in localStorage and cookies:", {
+                user: user.email,
+                level: user.level,
+            });
+        } catch (error) {
+            console.error("Error storing user in localStorage:", error);
+        }
+    },
+
+    clearUser: () => {
+        try {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            // Also clear the cookie
+            cookieUtils.delete("token");
+            console.log("User data cleared from localStorage and cookies");
+        } catch (error) {
+            console.error("Error clearing user from localStorage:", error);
+        }
+    },
+
+    // Validate if user data and token exist
+    isValid: (): boolean => {
+        const userData = localStorage.getItem("user");
+        const token = localStorage.getItem("token") || cookieUtils.get("token");
+        return !!(userData && token);
+    },
+};
+
+// Function to check if user is authenticated and handle token expiration
+export const checkAuthStatus = (): {
+    isAuthenticated: boolean;
+    user: User | null;
+} => {
+    try {
+        const user = userStorage.getUser();
+        const token = localStorage.getItem("token") || cookieUtils.get("token");
+
+        if (!user || !token) {
+            return { isAuthenticated: false, user: null };
+        }
+
+        // Optional: Check if token is expired (if you're using JWT with expiration)
+        // This is a basic check - you might want to decode the JWT and check expiration
+        // For now, we'll just check if the token exists
+
+        return { isAuthenticated: true, user };
+    } catch (error) {
+        console.error("Error checking auth status:", error);
+        return { isAuthenticated: false, user: null };
+    }
 };
 
 // Hook to get the current authenticated user
 export function useCurrentUser() {
-  return useQuery({
-    queryKey: authKeys.user,
-    queryFn: () => apiClient.get<User | null>("/auth/me"),
-    retry: false,
-    // Don't show error for unauthenticated users
-    throwOnError: false,
-  });
+    return useQuery({
+        queryKey: authKeys.user,
+        queryFn: () => {
+            const { user } = checkAuthStatus();
+            console.log(
+                "useCurrentUser - Retrieved user from localStorage:",
+                user ? { email: user.email, level: user.level } : null
+            );
+            return user;
+        },
+        retry: false,
+        // Don't show error for unauthenticated users
+        throwOnError: false,
+    });
 }
 
 // Hook for user login
@@ -50,7 +136,8 @@ export function useLogin() {
                 credentials
             ),
         onSuccess: (data) => {
-            localStorage.setItem("token", data.token);
+            // Store both token and user data in localStorage using utility
+            userStorage.setUser(data.user, data.token);
             queryClient.setQueryData(authKeys.user, data.user);
             router.push("/dashboard");
         },
@@ -68,11 +155,12 @@ export function useRegister() {
     return useMutation({
         mutationFn: (userData: RegisterInput) =>
             apiClient.post<{ user: User; token: string }>(
-                "/auth/register",
+                "/auth/signup",
                 userData
             ),
         onSuccess: (data) => {
-            localStorage.setItem("token", data.token);
+            // Store both token and user data in localStorage using utility
+            userStorage.setUser(data.user, data.token);
             queryClient.setQueryData(authKeys.user, data.user);
             router.push("/dashboard");
         },
@@ -82,25 +170,54 @@ export function useRegister() {
     });
 }
 
-// Hook for user logout
-export function useLogout() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
+// Simple logout function that can be called directly
+export const logout = () => {
+    try {
+        // Clear localStorage
+        userStorage.clearUser();
 
-  return useMutation({
-    mutationFn: () => apiClient.post<void>("/auth/logout"),
-    onSuccess: () => {
-      queryClient.setQueryData(authKeys.user, null);
-      queryClient.invalidateQueries();
-      router.push("/login");
-    },
-    onError: (error) => {
-      showApiError(error);
-      // Even if the API call fails, we should clear the local state
-      queryClient.setQueryData(authKeys.user, null);
-      router.push("/login");
-    },
-  });
+        // Clear React Query cache
+        // Note: This needs to be called from within a React component context
+        // For direct calls, we'll just clear localStorage
+
+        console.log("User logged out successfully");
+
+        // Redirect to login page
+        if (typeof window !== "undefined") {
+            window.location.href = "/login";
+        }
+    } catch (error) {
+        console.error("Logout error:", error);
+    }
+};
+
+// Hook for user logout (with React Query)
+export function useLogout() {
+    const queryClient = useQueryClient();
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: async () => {
+            // No API call needed for logout - just clear local state
+            // If you want to invalidate the token on the server later, you can add that here
+            return Promise.resolve();
+        },
+        onSuccess: () => {
+            // Clear both token and user data from localStorage using utility
+            userStorage.clearUser();
+            queryClient.setQueryData(authKeys.user, null);
+            queryClient.invalidateQueries();
+            console.log("User logged out successfully");
+            router.push("/login");
+        },
+        onError: (error) => {
+            console.error("Logout error:", error);
+            // Even if there's an error, we should clear the local state
+            userStorage.clearUser();
+            queryClient.setQueryData(authKeys.user, null);
+            router.push("/login");
+        },
+    });
 }
 
 // Hook to check if user is authenticated

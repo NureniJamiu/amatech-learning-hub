@@ -1,25 +1,120 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import { useLogin } from "@/hooks/use-auth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLogin, userStorage } from "@/hooks/use-auth";
+import { redirectIfAuthenticated } from "@/utils/auth-utils";
+import { cookieUtils } from "@/utils/cookies";
+import Link from "next/link";
+import { toast } from "react-toastify";
+
+interface LoginFormData {
+    email: string;
+    password: string;
+}
+
+interface FormErrors {
+    email?: string;
+    password?: string;
+    general?: string;
+}
 
 export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const { mutate: login, isPending } = useLogin();
+    const [formData, setFormData] = useState<LoginFormData>({
+        email: "",
+        password: "",
+    });
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [showPassword, setShowPassword] = useState(false);
+
+    const { mutate: login, isPending, error: loginError } = useLogin();
+
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors = {};
+
+        // Email validation
+        if (!formData.email.trim()) {
+            newErrors.email = "Email is required";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            newErrors.email = "Please enter a valid email address";
+        }
+
+        // Password validation
+        if (!formData.password) {
+            newErrors.password = "Password is required";
+        } else if (formData.password.length < 6) {
+            newErrors.password = "Password must be at least 6 characters";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleInputChange = (field: keyof LoginFormData, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+
+        // Clear field-specific error when user starts typing
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        login({ email, password });
+
+        if (validateForm()) {
+            console.log("Submitting login form with data:", formData);
+            login(formData, {
+                onSuccess: () => {
+                    toast.success("Login successful! Welcome back.");
+                },
+                onError: (err: any) => {
+                    toast.error(
+                        err?.message || "Login failed. Please try again."
+                    );
+                },
+            });
+        }
     };
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    useEffect(() => {
+        // Simple check - don't redirect if user is not properly authenticated
+        try {
+            const userData = localStorage.getItem("user");
+            const token =
+                localStorage.getItem("token") || cookieUtils.get("token");
+
+            if (userData && token) {
+                const user = JSON.parse(userData);
+                if (user?.id && user?.email) {
+                    console.log(
+                        "User is authenticated, should redirect to dashboard"
+                    );
+                    // Only redirect if we have valid user data
+                    window.location.href = "/dashboard";
+                }
+            }
+        } catch (error) {
+            console.log("Error checking auth, clearing storage:", error);
+            // Clear any corrupted data
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            cookieUtils.delete("token");
+        }
+    }, []);
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -28,44 +123,105 @@ export function LoginForm({
                     <form onSubmit={handleSubmit} className="p-6 md:p-8">
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col items-center text-center">
-                                <h1 className="text-2xl font-bold ">
+                                <h1 className="text-2xl font-bold">
                                     Welcome Back
                                 </h1>
                                 <p className="text-muted-foreground text-balance">
                                     Login to your student account.
                                 </p>
                             </div>
+
+                            {/* General error display */}
+                            {(loginError || errors.general) && (
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>
+                                        {loginError?.message ||
+                                            errors.general ||
+                                            "Login failed. Please try again."}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
                             <div className="grid gap-3">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     placeholder="m@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={formData.email}
+                                    onChange={(e) =>
+                                        handleInputChange(
+                                            "email",
+                                            e.target.value
+                                        )
+                                    }
+                                    className={cn(
+                                        errors.email &&
+                                            "border-red-500 focus-visible:ring-red-500"
+                                    )}
+                                    disabled={isPending}
                                     required
                                 />
+                                {errors.email && (
+                                    <p className="text-sm text-red-500">
+                                        {errors.email}
+                                    </p>
+                                )}
                             </div>
+
                             <div className="grid gap-3">
-                                <div className="flex items-center">
+                                <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Password</Label>
-                                    <a
-                                        href="#"
-                                        className="ml-auto text-sm underline-offset-2 hover:underline"
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-sm text-muted-foreground underline-offset-2 hover:underline"
                                     >
                                         Forgot your password?
-                                    </a>
+                                    </Link>
                                 </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
+                                        placeholder="Enter your password"
+                                        value={formData.password}
+                                        onChange={(e) =>
+                                            handleInputChange(
+                                                "password",
+                                                e.target.value
+                                            )
+                                        }
+                                        className={cn(
+                                            "pr-10",
+                                            errors.password &&
+                                                "border-red-500 focus-visible:ring-red-500"
+                                        )}
+                                        disabled={isPending}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={togglePasswordVisibility}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        disabled={isPending}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.password && (
+                                    <p className="text-sm text-red-500">
+                                        {errors.password}
+                                    </p>
+                                )}
                             </div>
+
                             <Button
                                 type="submit"
                                 className="w-full"
@@ -73,11 +229,13 @@ export function LoginForm({
                             >
                                 {isPending ? "Logging in..." : "Login"}
                             </Button>
+
                             <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                                 <span className="bg-card text-muted-foreground relative z-10 px-2">
                                     Or continue with
                                 </span>
                             </div>
+
                             <div className="grid grid-cols-3 gap-4">
                                 <Button
                                     disabled
@@ -137,14 +295,15 @@ export function LoginForm({
                                     </span>
                                 </Button>
                             </div>
+
                             <div className="text-center text-sm">
                                 Don&apos;t have an account?{" "}
-                                <a
+                                <Link
                                     href="/signup"
-                                    className="underline underline-offset-4"
+                                    className="text-primary underline underline-offset-4 hover:text-primary/80"
                                 >
                                     Sign up
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </form>
