@@ -38,41 +38,42 @@ export function AnimatedGridBackground({ className = "" }: AnimatedGridBackgroun
 
       for (let i = 0; i <= cols; i++) {
         for (let j = 0; j <= rows; j++) {
-          const x = i * gridSize;
-          const y = j * gridSize;
+            const x = i * gridSize;
+            const y = j * gridSize;
 
-          const distance = Math.sqrt(
-            Math.pow(mouseRef.current.x - x, 2) + Math.pow(mouseRef.current.y - y, 2)
-          );
+            const distance = Math.sqrt(
+                Math.pow(mouseRef.current.x - x, 2) +
+                    Math.pow(mouseRef.current.y - y, 2)
+            );
 
-          const opacity = Math.max(0, 1 - distance / maxDistance);
-          const intensity = opacity * 0.3;
+            const opacity = Math.max(0.15, 1 - distance / maxDistance); // Added base opacity of 0.15
+            const intensity = opacity * 0.6; // Increased from 0.3 to 0.6 for better visibility
 
-          // Draw horizontal line
-          if (j < rows) {
-            ctx.strokeStyle = `rgba(34, 197, 94, ${intensity})`;
-            ctx.lineWidth = 1;
+            // Draw horizontal line
+            if (j < rows) {
+                ctx.strokeStyle = `rgba(34, 197, 94, ${intensity})`;
+                ctx.lineWidth = 2; // Increased line width for better visibility
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + gridSize, y);
+                ctx.stroke();
+            }
+
+            // Draw vertical line
+            if (i < cols) {
+                ctx.strokeStyle = `rgba(34, 197, 94, ${intensity})`;
+                ctx.lineWidth = 2; // Increased line width for better visibility
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + gridSize);
+                ctx.stroke();
+            }
+
+            // Draw intersection point
+            ctx.fillStyle = `rgba(34, 197, 94, ${intensity * 2})`;
             ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + gridSize, y);
-            ctx.stroke();
-          }
-
-          // Draw vertical line
-          if (i < cols) {
-            ctx.strokeStyle = `rgba(34, 197, 94, ${intensity})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x, y + gridSize);
-            ctx.stroke();
-          }
-
-          // Draw intersection point
-          ctx.fillStyle = `rgba(34, 197, 94, ${intensity * 2})`;
-          ctx.beginPath();
-          ctx.arc(x, y, 2, 0, Math.PI * 2);
-          ctx.fill();
+            ctx.arc(x, y, 3, 0, Math.PI * 2); // Increased size from 2 to 3
+            ctx.fill();
         }
       }
     };
