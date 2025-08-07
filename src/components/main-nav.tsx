@@ -1,6 +1,5 @@
 "use client";
 
-import { Settings, Shield } from "lucide-react";
 import { mainNavItems } from "@/data/mock-data";
 import { useAppContext } from "@/context/app-context";
 import {
@@ -8,18 +7,14 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarSeparator,
+    useSidebar,
 } from "@/components/ui/sidebar";
 
 export function MainNav() {
-    const {
-        currentView,
-        setCurrentView,
-        setSelectedCourse,
-        isAdminMode,
-        setIsAdminMode,
-        currentUser,
-    } = useAppContext();
+    const { currentView, setCurrentView, setSelectedCourse, currentUser } =
+        useAppContext();
+
+    const { state } = useSidebar();
 
     // Function to handle navigation click
     const handleNavClick = (title: string) => {
@@ -30,10 +25,6 @@ export function MainNav() {
         if (viewName === "courses") {
             setSelectedCourse(null);
         }
-    };
-
-    const handleAdminToggle = () => {
-        setIsAdminMode(!isAdminMode);
     };
 
     // Function to convert navigation title to view name
@@ -67,41 +58,15 @@ export function MainNav() {
                             <SidebarMenuButton
                                 isActive={isNavActive(item.title)}
                                 onClick={() => handleNavClick(item.title)}
+                                tooltip={item.title}
                             >
-                                <item.icon className="h-4 w-4" />
+                                <item.icon className="h-4 w-4 shrink-0" />
                                 <span>{item.title}</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
                 </SidebarMenu>
             </SidebarGroup>
-
-            {/* Admin Mode Toggle - Only show for admin users */}
-            {currentUser?.isAdmin && (
-                <>
-                    <SidebarSeparator />
-                    <SidebarGroup>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    isActive={isAdminMode}
-                                    onClick={handleAdminToggle}
-                                    variant={
-                                        isAdminMode ? "default" : "outline"
-                                    }
-                                >
-                                    <Shield className="h-4 w-4" />
-                                    <span>
-                                        {isAdminMode
-                                            ? "Admin Mode"
-                                            : "Switch to Admin"}
-                                    </span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroup>
-                </>
-            )}
         </>
     );
 }
