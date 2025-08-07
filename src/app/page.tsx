@@ -101,7 +101,7 @@ export default function LandingPage() {
                                 <GraduationCap className="h-8 w-8 text-primary" />
                             </motion.div>
                             <span className="font-bold text-xl text-gray-900">
-                                AmaTech Learning Hub
+                                Amalearn
                             </span>
                         </motion.div>
 
@@ -738,7 +738,7 @@ export default function LandingPage() {
                                     <GraduationCap className="h-8 w-8 text-primary" />
                                 </motion.div>
                                 <span className="font-bold text-xl text-gray-900">
-                                    AmaTech Learning Hub
+                                    Amalearn
                                 </span>
                             </motion.div>
                             <p className="text-gray-600">
@@ -808,7 +808,8 @@ export default function LandingPage() {
                         viewport={{ once: true }}
                     >
                         <p className="text-gray-600">
-                            © {new Date().getFullYear()} AmaTech Learning Hub.
+                            © {new Date().getFullYear()} Association of
+                            Management Technology Students Learning Hub. <br />
                             All rights reserved.
                         </p>
                     </motion.div>

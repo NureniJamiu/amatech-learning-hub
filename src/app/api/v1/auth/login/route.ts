@@ -39,27 +39,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = generateAuthToken(user.id);
+    const token = await generateAuthToken(user.id);
     console.log("Token generated successfully");
+    console.log("Token length:", token?.length);
+    console.log("Token preview:", token?.substring(0, 20) + "...");
+    console.log("User ID for token:", user.id);
 
-    return NextResponse.json({
-      token,
-      user: {
-        id: user.id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-        matricNumber: user.matricNumber,
-        level: user.level,
-        isAdmin: user.isAdmin,
-        department: user.department,
-        faculty: user.faculty,
-        currentSemester: user.currentSemester,
-        avatar: user.avatar,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+    const response = NextResponse.json({
+        token,
+        user: {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            matricNumber: user.matricNumber,
+            level: user.level,
+            isAdmin: user.isAdmin,
+            department: user.department,
+            faculty: user.faculty,
+            currentSemester: user.currentSemester,
+            avatar: user.avatar,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        },
     });
+
+    // Set HTTP-only cookie for middleware access
+    response.cookies.set("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 15 * 24 * 60 * 60, // 15 days in seconds
+        path: "/",
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

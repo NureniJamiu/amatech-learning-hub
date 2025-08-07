@@ -2,9 +2,9 @@ import { verifyAuthToken } from "@/utils/token";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export const authenticateRequest = (
+export const authenticateRequest = async (
     req: NextRequest
-): { userId: string } | null => {
+): Promise<{ userId: string } | null> => {
     const authHeader =
         req.headers.get("authorization") || req.headers.get("Authorization");
 
@@ -19,7 +19,7 @@ export const authenticateRequest = (
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = verifyAuthToken(token);
+    const decoded = await verifyAuthToken(token);
 
     if (!decoded) {
         console.warn("Token verification failed");
@@ -32,7 +32,7 @@ export const authenticateRequest = (
 export const authenticateAndValidateUser = async (
     req: NextRequest
 ): Promise<{ userId: string; user: any } | null> => {
-    const authResult = authenticateRequest(req);
+    const authResult = await authenticateRequest(req);
 
     if (!authResult) {
         return null;

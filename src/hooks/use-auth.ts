@@ -51,9 +51,8 @@ export const userStorage = {
         try {
             localStorage.setItem("user", JSON.stringify(user));
             localStorage.setItem("token", token);
-            // Also set the token as a cookie for middleware access
-            cookieUtils.set("token", token, 15); // 15 days expiration
-            console.log("User data stored in localStorage and cookies:", {
+            // Note: HTTP-only cookie is set by the server in the login API
+            console.log("User data stored in localStorage:", {
                 user: user.email,
                 level: user.level,
             });
@@ -66,9 +65,8 @@ export const userStorage = {
         try {
             localStorage.removeItem("user");
             localStorage.removeItem("token");
-            // Also clear the cookie
-            cookieUtils.delete("token");
-            console.log("User data cleared from localStorage and cookies");
+            // Note: HTTP-only cookie is cleared by the logout API
+            console.log("User data cleared from localStorage");
         } catch (error) {
             console.error("Error clearing user from localStorage:", error);
         }
@@ -179,14 +177,21 @@ export function useRegister() {
 }
 
 // Simple logout function that can be called directly
-export const logout = () => {
+export const logout = async () => {
     try {
+        // Call the logout API to clear the HTTP-only cookie
+        try {
+            await fetch("/api/v1/auth/logout", {
+                method: "POST",
+                credentials: "include", // Include cookies
+            });
+        } catch (apiError) {
+            console.warn("Could not call logout API:", apiError);
+            // Continue with client-side cleanup even if API call fails
+        }
+
         // Clear localStorage
         userStorage.clearUser();
-
-        // Clear React Query cache
-        // Note: This needs to be called from within a React component context
-        // For direct calls, we'll just clear localStorage
 
         console.log("User logged out successfully");
 
@@ -206,9 +211,8 @@ export function useLogout() {
 
     return useMutation({
         mutationFn: async () => {
-            // No API call needed for logout - just clear local state
-            // If you want to invalidate the token on the server later, you can add that here
-            return Promise.resolve();
+            // Call the logout API to clear the HTTP-only cookie
+            return apiClient.post("/auth/logout", {});
         },
         onSuccess: () => {
             // Clear both token and user data from localStorage using utility
