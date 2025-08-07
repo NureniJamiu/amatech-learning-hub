@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/use-auth";
 import { useCourses } from "@/hooks/use-courses";
 import type { Course } from "@/types";
 
-type AppView = "dashboard" | "courses" | "ai-assistant";
+type AppView = "dashboard" | "courses" | "timetable" | "ai-assistant";
 
 type AppContextType = {
     currentView: AppView;

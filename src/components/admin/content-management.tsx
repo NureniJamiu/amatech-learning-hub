@@ -80,6 +80,7 @@ import {
     usePastQuestions,
     useUploadPastQuestion,
 } from "@/hooks/use-past-questions";
+import { useRecentlyAccessed } from "@/hooks/use-recently-accessed";
 
 export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
@@ -90,6 +91,9 @@ export function ContentManagement() {
         file: null,
         type: "material",
     });
+
+    const { trackMaterialAccess, trackPastQuestionAccess } =
+        useRecentlyAccessed();
 
     // React Query Hooks
     const {
@@ -235,6 +239,26 @@ export function ContentManagement() {
 
     const handleFileUploadComplete = (url: string) => {
         setFormData((prev) => ({ ...prev, file: url }));
+    };
+
+    // Handle view material
+    const handleViewMaterial = (material: Material2) => {
+        trackMaterialAccess(material);
+        // Open in a new tab
+        if (material.fileUrl) {
+            window.open(material.fileUrl, "_blank");
+        }
+    };
+
+    // Handle view past question
+    const handleViewPastQuestion = (pastQuestion: any) => {
+        if (pastQuestion.course) {
+            trackPastQuestionAccess(pastQuestion);
+            // Open in a new tab
+            if (pastQuestion.fileUrl) {
+                window.open(pastQuestion.fileUrl, "_blank");
+            }
+        }
     };
 
     return (
@@ -507,7 +531,13 @@ export function ContentManagement() {
                                                                     <DropdownMenuLabel>
                                                                         Actions
                                                                     </DropdownMenuLabel>
-                                                                    <DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={() =>
+                                                                            handleViewMaterial(
+                                                                                material
+                                                                            )
+                                                                        }
+                                                                    >
                                                                         <FileText className="mr-2 h-4 w-4" />
                                                                         View
                                                                     </DropdownMenuItem>
@@ -698,7 +728,13 @@ export function ContentManagement() {
                                                                         <DropdownMenuLabel>
                                                                             Actions
                                                                         </DropdownMenuLabel>
-                                                                        <DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            onClick={() =>
+                                                                                handleViewPastQuestion(
+                                                                                    question
+                                                                                )
+                                                                            }
+                                                                        >
                                                                             <FileText className="mr-2 h-4 w-4" />
                                                                             View
                                                                         </DropdownMenuItem>

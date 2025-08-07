@@ -25,17 +25,24 @@ export function MainNav() {
         if (viewName === "courses") {
             setSelectedCourse(null);
         }
+
+        // If navigating to timetable, also clear selected course
+        if (viewName === "timetable") {
+            setSelectedCourse(null);
+        }
     };
 
     // Function to convert navigation title to view name
     const getViewFromTitle = (
         title: string
-    ): "dashboard" | "courses" | "ai-assistant" => {
+    ): "dashboard" | "courses" | "timetable" | "ai-assistant" => {
         switch (title.toLowerCase()) {
             case "dashboard":
                 return "dashboard";
             case "courses":
                 return "courses";
+            case "timetable":
+                return "timetable";
             case "ai assistant":
                 return "ai-assistant";
             default:

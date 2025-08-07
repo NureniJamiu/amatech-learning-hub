@@ -52,38 +52,44 @@ export type Material2 = {
 
 
 export type PastQuestion = {
-  id: string;
-  title: string;
-  year: number;
-  fileUrl: string;
-  fileType: string;
+    id: string;
+    title: string;
+    year: number;
+    fileUrl: string;
+    fileType: string;
+    course?: {
+        code: string;
+        title: string;
+    };
 };
 
 export type Tutor = {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
 };
 
 export type Bookmark = {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  url: string;
+    id: string;
+    title: string;
+    icon: React.ElementType;
+    url: string;
 };
 
 export type ChatMessage = {
-  id: string;
-  content: string;
-  sender: "user" | "ai";
-  timestamp: string;
+    id: string;
+    content: string;
+    sender: "user" | "ai";
+    timestamp: string;
 };
 
 export type TimetableEntry = {
-  id: string;
-  day: string;
-  time: string;
-  location: string;
-  courseId: string;
+    id: string;
+    day: string;
+    time: string;
+    location: string;
+    semester: number;
+    courseId: string;
+    course?: Course; // Optional, for when we include course details
 };

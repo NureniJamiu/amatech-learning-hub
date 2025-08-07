@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/middleware/auth.middleware";
 
 export async function GET(request: NextRequest) {
     try {
         // Verify authentication
-        const token = request.headers
-            .get("authorization")
-            ?.replace("Bearer ", "");
-        if (!token) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
+        const authResult = await requireAuth(request);
+        if (authResult instanceof NextResponse) {
+            return authResult;
         }
 
-        const decoded = await verifyToken(token);
-        if (!decoded) {
-            return NextResponse.json(
-                { error: "Invalid token" },
-                { status: 401 }
-            );
-        }
+        const { user } = authResult;
 
         // Get query parameters
         const { searchParams } = new URL(request.url);

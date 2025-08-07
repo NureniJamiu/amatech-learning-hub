@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/app/generated/prisma"
 }
 
 datasource db {
@@ -10,86 +8,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model for students and admins
 model User {
-  id              String   @id @default(cuid())
-  firstname       String
-  lastname        String?
-  email           String   @unique
-  password        String
-  matricNumber    String?  @unique
-  level           Int // 100, 200, 300, 400, 500
-  currentSemester Int? // 1 or 2
-  department      String?
-  faculty         String?
-  avatar          String?
-  isAdmin         Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Relations
+  id               String           @id @default(cuid())
+  firstname        String
+  lastname         String?
+  email            String           @unique
+  password         String
+  matricNumber     String?          @unique
+  level            Int
+  currentSemester  Int?
+  department       String?
+  faculty          String?
+  avatar           String?
+  isAdmin          Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
   bookmarks        Bookmark[]
-  timetableEntries TimetableEntry[]
-  materials        Material[] // Materials uploaded by this user (admin)
-  pastQuestions    PastQuestion[] // Past questions uploaded by this user (admin)
+  materials        Material[]
   notifications    Notification[]
+  pastQuestions    PastQuestion[]
   sessions         Session[]
+  timetableEntries TimetableEntry[]
 
   @@map("users")
 }
 
-// Tutor model for course lecturers
 model Tutor {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   name      String
-  email     String   @unique
+  email     String          @unique
   avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  courses CourseToTutor[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  courses   CourseToTutor[]
 
   @@map("tutors")
 }
 
-// Course model
 model Course {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g., MTE 301
-  title       String
-  units       Int
-  level       Int // 100, 200, 300, 400, 500
-  semester    Int // 1 or 2
-  description String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id               String           @id @default(cuid())
+  code             String           @unique
+  title            String
+  units            Int
+  level            Int
+  semester         Int
+  description      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  tutors           CourseToTutor[]
   materials        Material[]
   pastQuestions    PastQuestion[]
-  tutors           CourseToTutor[]
   timetableEntries TimetableEntry[]
 
   @@map("courses")
 }
 
-// Join table for many-to-many relationship between Course and Tutor
 model CourseToTutor {
   id        String   @id @default(cuid())
   courseId  String
   tutorId   String
   createdAt DateTime @default(now())
-
-  // Relations
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  tutor  Tutor  @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tutor     Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, tutorId])
   @@map("course_tutors")
 }
 
-// Material model for course materials (PDF only)
 model Material {
   id           String   @id @default(cuid())
   title        String
@@ -98,15 +83,12 @@ model Material {
   uploadedById String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  // Relations
-  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@map("materials")
 }
 
-// PastQuestion model (PDF only)
 model PastQuestion {
   id           String   @id @default(cuid())
   title        String
@@ -116,64 +98,53 @@ model PastQuestion {
   uploadedById String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  // Relations
-  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@map("past_questions")
 }
 
-// Bookmark model
 model Bookmark {
   id        String   @id @default(cuid())
   title     String
   url       String
-  icon      String // Store the icon name (e.g., "Compass", "Briefcase")
+  icon      String
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("bookmarks")
 }
 
-// TimetableEntry model
 model TimetableEntry {
   id        String   @id @default(cuid())
-  day       String // Monday, Tuesday, etc.
-  time      String // e.g., "9:00 AM - 11:00 AM"
+  day       String
+  time      String
   location  String
   userId    String
   courseId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  semester  Int
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("timetable_entries")
 }
 
-// Notification model
 model Notification {
   id        String   @id @default(cuid())
   title     String
-  message   String   @db.Text
+  message   String
   isRead    Boolean  @default(false)
   userId    String
   createdAt DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
-// Session model for authentication
 model Session {
   id        String   @id @default(cuid())
   userId    String
@@ -181,14 +152,11 @@ model Session {
   expires   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
-// SystemSettings model for application configuration
 model SystemSettings {
   id                String   @id @default(cuid())
   siteName          String   @default("Amatech Lasu - Student Learning Hub")
@@ -208,24 +176,22 @@ model SystemSettings {
   @@map("system_settings")
 }
 
-// AIAssistantChat model to store chat history
 model AIAssistantChat {
   id        String   @id @default(cuid())
   userId    String
-  messages  Json[] // Array of message objects with sender, content, timestamp
-  courseId  String? // Optional course context
+  messages  Json[]
+  courseId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("ai_assistant_chats")
 }
 
-// ActivityLog model for tracking user activity
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String?
   action    String
-  details   String?  @db.Text
+  details   String?
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())

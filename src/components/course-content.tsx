@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import { Download, ExternalLink, ArrowLeft } from "lucide-react";
 
 import { useAppContext } from "@/context/app-context";
@@ -8,14 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type { Material, PastQuestion } from "@/types";
+import type { Material, PastQuestion, Material2 } from "@/types";
 import { FullScreenPDFViewer } from "./full-screen-pdf-viewer";
+import { useRecentlyAccessed } from "@/hooks/use-recently-accessed";
 
 // Local PDF path for development
 const LOCAL_PDF_PATH = "/pdfs/stakeholders.pdf";
 
 export function CourseContent() {
     const { selectedCourse, setSelectedCourse } = useAppContext();
+    const { trackMaterialAccess, trackPastQuestionAccess } =
+        useRecentlyAccessed();
     const [viewingPdf, setViewingPdf] = useState<
         Material | PastQuestion | null
     >(null);
@@ -36,7 +39,46 @@ export function CourseContent() {
     };
 
     // Function to handle PDF download
-    const handleDownload = (fileUrl: string, title: string) => {
+    const handleDownload = (
+        fileUrl: string,
+        title: string,
+        item?: Material | PastQuestion
+    ) => {
+        // Track the access for recently accessed items if item is provided
+        if (item) {
+            if ("year" in item) {
+                // It's a past question
+                const pastQuestionWithCourse = {
+                    ...item,
+                    course: {
+                        code: selectedCourse.code,
+                        title: selectedCourse.title,
+                    },
+                };
+                trackPastQuestionAccess(pastQuestionWithCourse);
+            } else {
+                // It's a material
+                const materialWithCourse: Material2 = {
+                    id: item.id,
+                    title: item.title,
+                    fileUrl: item.fileUrl,
+                    fileType: item.fileType,
+                    createdAt: new Date().toISOString(),
+                    course: {
+                        code: selectedCourse.code,
+                        title: selectedCourse.title,
+                    },
+                    uploadedBy: {
+                        id: "mock",
+                        firstname: "Mock",
+                        lastname: "User",
+                        email: "mock@example.com",
+                    },
+                };
+                trackMaterialAccess(materialWithCourse);
+            }
+        }
+
         // For local development, use the local PDF
         const pdfUrl = LOCAL_PDF_PATH;
 
@@ -51,6 +93,39 @@ export function CourseContent() {
 
     // Function to handle opening PDF
     const handleOpenPdf = (item: Material | PastQuestion) => {
+        // Track the access for recently accessed items
+        if ("year" in item) {
+            // It's a past question
+            const pastQuestionWithCourse = {
+                ...item,
+                course: {
+                    code: selectedCourse.code,
+                    title: selectedCourse.title,
+                },
+            };
+            trackPastQuestionAccess(pastQuestionWithCourse);
+        } else {
+            // It's a material
+            const materialWithCourse: Material2 = {
+                id: item.id,
+                title: item.title,
+                fileUrl: item.fileUrl,
+                fileType: item.fileType,
+                createdAt: new Date().toISOString(),
+                course: {
+                    code: selectedCourse.code,
+                    title: selectedCourse.title,
+                },
+                uploadedBy: {
+                    id: "mock",
+                    firstname: "Mock",
+                    lastname: "User",
+                    email: "mock@example.com",
+                },
+            };
+            trackMaterialAccess(materialWithCourse);
+        }
+
         // Create a modified item with the local PDF path
         const modifiedItem = {
             ...item,
@@ -138,7 +213,8 @@ export function CourseContent() {
                                                         onClick={() =>
                                                             handleDownload(
                                                                 material.fileUrl,
-                                                                material.title
+                                                                material.title,
+                                                                material
                                                             )
                                                         }
                                                     >
@@ -197,7 +273,8 @@ export function CourseContent() {
                                                         onClick={() =>
                                                             handleDownload(
                                                                 pastQuestion.fileUrl,
-                                                                pastQuestion.title
+                                                                pastQuestion.title,
+                                                                pastQuestion
                                                             )
                                                         }
                                                     >

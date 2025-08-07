@@ -1,41 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { AvatarFallback } from "@/components/ui/avatar";
-import { AvatarImage } from "@/components/ui/avatar";
-import { Avatar } from "@/components/ui/avatar";
-import { FileText, GraduationCap, Plus, Table2Icon } from "lucide-react";
-
-import { currentUser } from "@/data/mock-data";
-import { useAppContext } from "@/context/app-context";
+import React, { useState } from "react";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
     Table,
     TableBody,
@@ -44,132 +36,189 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { Plus, Calendar, BookOpen, Clock, Table2Icon } from "lucide-react";
+import { useAppContext } from "@/context/app-context";
+import {
+    useCurrentUserTimetable,
+    useAddTimetableEntry,
+    TimetableEntryInput,
+} from "@/hooks/use-timetable";
+import { useCourses } from "@/hooks/use-courses";
+import { RecentlyAccessedCard } from "@/components/recently-accessed-card";
+
+// Import test utility (only in development)
+if (process.env.NODE_ENV === "development") {
+    import("@/utils/test-data");
+}
+
+const DAYS_OF_WEEK = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+];
+
+const TIME_SLOTS = [
+    "8:00 AM - 9:00 AM",
+    "9:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "12:00 PM - 1:00 PM",
+    "1:00 PM - 2:00 PM",
+    "2:00 PM - 3:00 PM",
+    "3:00 PM - 4:00 PM",
+    "4:00 PM - 5:00 PM",
+    "5:00 PM - 6:00 PM",
+];
 
 export function DashboardView() {
-    const { filteredCourses, setCurrentView, setSelectedCourse } =
-        useAppContext();
-    const [timetable, setTimetable] = useState<
-        Array<{
-            id: string;
-            day: string;
-            time: string;
-            course: string;
-            location: string;
-        }>
-    >([
-        {
-            id: "1",
-            day: "Monday",
-            time: "9:00 AM - 11:00 AM",
-            course: "MTE 301",
-            location: "Room 101",
-        },
-        {
-            id: "2",
-            day: "Tuesday",
-            time: "1:00 PM - 3:00 PM",
-            course: "MTE 303",
-            location: "Lab 2",
-        },
-        {
-            id: "3",
-            day: "Wednesday",
-            time: "10:00 AM - 12:00 PM",
-            course: "MTE 305",
-            location: "Room 205",
-        },
-    ]);
+    const { setCurrentView, setSelectedCourse, currentUser } = useAppContext();
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [newEntry, setNewEntry] = useState({
         day: "Monday",
         time: "",
-        course: "",
+        courseId: "",
         location: "",
+        semester: 1,
     });
 
+    // Fetch user's timetable
+    const { data: timetableEntries = [], isLoading: isLoadingTimetable } =
+        useCurrentUserTimetable();
+
+    // Fetch courses for the user's level
+    const { data: coursesResponse } = useCourses({
+        level: currentUser?.level,
+        limit: 1000,
+    });
+
+    // Mutations
+    const addTimetableEntryMutation = useAddTimetableEntry();
+
     const handleViewCourse = (courseCode: string) => {
-        const course = filteredCourses.find((c) => c.code === courseCode);
+        const course = coursesResponse?.courses?.find(
+            (c) => c.code === courseCode
+        );
         if (course) {
             setSelectedCourse(course);
             setCurrentView("courses");
         }
     };
 
-    const addTimetableEntry = () => {
-        if (newEntry.time && newEntry.course && newEntry.location) {
-            setTimetable([
-                ...timetable,
-                {
-                    id: Date.now().toString(),
+    const handleViewTimetable = () => {
+        setCurrentView("timetable");
+    };
+
+    const addTimetableEntry = async () => {
+        if (newEntry.time && newEntry.courseId && newEntry.location) {
+            try {
+                const entryData: TimetableEntryInput = {
                     day: newEntry.day,
                     time: newEntry.time,
-                    course: newEntry.course,
                     location: newEntry.location,
-                },
-            ]);
-            setNewEntry({
-                day: "Monday",
-                time: "",
-                course: "",
-                location: "",
-            });
+                    courseId: newEntry.courseId,
+                    semester: newEntry.semester,
+                };
+
+                await addTimetableEntryMutation.mutateAsync(entryData);
+
+                setNewEntry({
+                    day: "Monday",
+                    time: "",
+                    courseId: "",
+                    location: "",
+                    semester: 1,
+                });
+                setIsCreateDialogOpen(false);
+            } catch (error) {
+                console.error("Failed to add timetable entry:", error);
+            }
         }
     };
 
     // Get current date for greeting
     const currentHour = new Date().getHours();
     let greeting = "Good morning";
-    if (currentHour >= 12 && currentHour < 18) {
+    if (currentHour >= 12 && currentHour < 17) {
         greeting = "Good afternoon";
-    } else if (currentHour >= 18) {
+    } else if (currentHour >= 17) {
         greeting = "Good evening";
     }
+
+    // Get user's courses for current semester
+    const userCourses =
+        coursesResponse?.courses?.filter(
+            (course) =>
+                course.level === currentUser?.level &&
+                course.semester === currentUser?.currentSemester
+        ) || [];
+
+    // Get recent timetable entries (limit to upcoming classes)
+    const recentTimetableEntries = timetableEntries.slice(0, 5);
+
+    if (!currentUser) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Loading dashboard...</p>
+            </div>
+        );
+    }
+
+    // Get available courses for current user's level and semester
+    const availableCourses =
+        coursesResponse?.courses?.filter(
+            (course) => course.level === currentUser.level
+        ) || [];
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">
-                    {greeting}, {currentUser.name.split(" ")[0]}!
+                    {greeting}, {currentUser.firstname}!
                 </h1>
                 <p className="text-muted-foreground">
-                    Welcome to your learning dashboard. Here's what's happening
-                    in your academic world.
+                    Welcome back to your learning dashboard
                 </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Enrolled Courses
+                            Total Courses
                         </CardTitle>
-                        <GraduationCap className="size-6 text-green-700" />
+                        <BookOpen className="size-6 text-blue-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {filteredCourses.length}
+                            {userCourses.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {currentUser.level} Level, Semester{" "}
-                            {currentUser.currentSemester}
+                            This semester
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Course Materials
+                            Current Level
                         </CardTitle>
-                        <FileText className="size-6 text-blue-700" />
+                        <Badge
+                            variant="outline"
+                            className="text-green-600 border-green-600"
+                        >
+                            Level {currentUser.level}
+                        </Badge>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {filteredCourses.reduce(
-                                (acc, course) => acc + course.materials.length,
-                                0
-                            )}
+                            Semester {currentUser.currentSemester}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Available for download
+                            Academic session
                         </p>
                     </CardContent>
                 </Card>
@@ -182,10 +231,26 @@ export function DashboardView() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {timetable.length}
+                            {timetableEntries.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Scheduled classes
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Department
+                        </CardTitle>
+                        <Calendar className="size-6 text-purple-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-sm font-bold">
+                            {currentUser.department}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {currentUser.faculty}
                         </p>
                     </CardContent>
                 </Card>
@@ -197,245 +262,277 @@ export function DashboardView() {
                         <div>
                             <CardTitle>My Timetable</CardTitle>
                             <CardDescription>
-                                Your weekly class schedule
+                                Your recent class schedule
                             </CardDescription>
                         </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button
-                                    size="sm"
-                                    className="rounded cursor-pointer"
-                                >
-                                    Add Class
-                                    <Plus className="size-4" />
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Add New Class</DialogTitle>
-                                    <DialogDescription>
-                                        Add a new class to your timetable.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="day"
-                                            className="text-right"
-                                        >
-                                            Day
-                                        </Label>
-                                        <Select
-                                            value={newEntry.day}
-                                            onValueChange={(value) =>
-                                                setNewEntry({
-                                                    ...newEntry,
-                                                    day: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select day" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Monday">
-                                                    Monday
-                                                </SelectItem>
-                                                <SelectItem value="Tuesday">
-                                                    Tuesday
-                                                </SelectItem>
-                                                <SelectItem value="Wednesday">
-                                                    Wednesday
-                                                </SelectItem>
-                                                <SelectItem value="Thursday">
-                                                    Thursday
-                                                </SelectItem>
-                                                <SelectItem value="Friday">
-                                                    Friday
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="time"
-                                            className="text-right"
-                                        >
-                                            Time
-                                        </Label>
-                                        <Input
-                                            id="time"
-                                            placeholder="e.g. 9:00 AM - 11:00 AM"
-                                            className="col-span-3"
-                                            value={newEntry.time}
-                                            onChange={(e) =>
-                                                setNewEntry({
-                                                    ...newEntry,
-                                                    time: e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="course"
-                                            className="text-right"
-                                        >
-                                            Course
-                                        </Label>
-                                        <Input
-                                            id="course"
-                                            placeholder="e.g. MTE 301"
-                                            className="col-span-3"
-                                            value={newEntry.course}
-                                            onChange={(e) =>
-                                                setNewEntry({
-                                                    ...newEntry,
-                                                    course: e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="location"
-                                            className="text-right"
-                                        >
-                                            Location
-                                        </Label>
-                                        <Input
-                                            id="location"
-                                            placeholder="e.g. Room 101"
-                                            className="col-span-3"
-                                            value={newEntry.location}
-                                            onChange={(e) =>
-                                                setNewEntry({
-                                                    ...newEntry,
-                                                    location: e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button onClick={addTimetableEntry}>
-                                        Add to Timetable
+                        <div className="flex gap-2">
+                            <Dialog
+                                open={isCreateDialogOpen}
+                                onOpenChange={setIsCreateDialogOpen}
+                            >
+                                <DialogTrigger asChild>
+                                    <Button
+                                        size="sm"
+                                        className="rounded cursor-pointer"
+                                    >
+                                        Add Class
+                                        <Plus className="size-4" />
                                     </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </CardHeader>
-                    <CardContent>
-                        <Table className="overflow-x-hidden">
-                            <TableHeader className="overflow-x-clip">
-                                <TableRow>
-                                    <TableHead>Day</TableHead>
-                                    <TableHead>Time</TableHead>
-                                    <TableHead>Course</TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead className="text-right">
-                                        Action
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {timetable.map((entry) => (
-                                    <TableRow key={entry.id}>
-                                        <TableCell>{entry.day}</TableCell>
-                                        <TableCell>{entry.time}</TableCell>
-                                        <TableCell>{entry.course}</TableCell>
-                                        <TableCell>{entry.location}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                    handleViewCourse(
-                                                        entry.course
-                                                    )
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Class</DialogTitle>
+                                        <DialogDescription>
+                                            Add a new class to your timetable.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label
+                                                htmlFor="course"
+                                                className="text-right"
+                                            >
+                                                Course
+                                            </Label>
+                                            <Select
+                                                value={newEntry.courseId}
+                                                onValueChange={(value) =>
+                                                    setNewEntry({
+                                                        ...newEntry,
+                                                        courseId: value,
+                                                    })
                                                 }
                                             >
-                                                View Course
-                                            </Button>
-                                        </TableCell>
+                                                <SelectTrigger className="col-span-3">
+                                                    <SelectValue placeholder="Select course" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableCourses.map(
+                                                        (course) => (
+                                                            <SelectItem
+                                                                key={course.id}
+                                                                value={
+                                                                    course.id
+                                                                }
+                                                            >
+                                                                {course.code} -{" "}
+                                                                {course.title}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label
+                                                htmlFor="day"
+                                                className="text-right"
+                                            >
+                                                Day
+                                            </Label>
+                                            <Select
+                                                value={newEntry.day}
+                                                onValueChange={(value) =>
+                                                    setNewEntry({
+                                                        ...newEntry,
+                                                        day: value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="col-span-3">
+                                                    <SelectValue placeholder="Select day" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {DAYS_OF_WEEK.map((day) => (
+                                                        <SelectItem
+                                                            key={day}
+                                                            value={day}
+                                                        >
+                                                            {day}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label
+                                                htmlFor="time"
+                                                className="text-right"
+                                            >
+                                                Time
+                                            </Label>
+                                            <Select
+                                                value={newEntry.time}
+                                                onValueChange={(value) =>
+                                                    setNewEntry({
+                                                        ...newEntry,
+                                                        time: value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="col-span-3">
+                                                    <SelectValue placeholder="Select time" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {TIME_SLOTS.map((time) => (
+                                                        <SelectItem
+                                                            key={time}
+                                                            value={time}
+                                                        >
+                                                            {time}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label
+                                                htmlFor="semester"
+                                                className="text-right"
+                                            >
+                                                Semester
+                                            </Label>
+                                            <Select
+                                                value={newEntry.semester.toString()}
+                                                onValueChange={(value) =>
+                                                    setNewEntry({
+                                                        ...newEntry,
+                                                        semester:
+                                                            parseInt(value),
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="col-span-3">
+                                                    <SelectValue placeholder="Select semester" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1">
+                                                        First Semester
+                                                    </SelectItem>
+                                                    <SelectItem value="2">
+                                                        Second Semester
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label
+                                                htmlFor="location"
+                                                className="text-right"
+                                            >
+                                                Location
+                                            </Label>
+                                            <Input
+                                                id="location"
+                                                placeholder="e.g. Room 101"
+                                                className="col-span-3"
+                                                value={newEntry.location}
+                                                onChange={(e) =>
+                                                    setNewEntry({
+                                                        ...newEntry,
+                                                        location:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button
+                                            onClick={addTimetableEntry}
+                                            disabled={
+                                                addTimetableEntryMutation.isPending
+                                            }
+                                        >
+                                            {addTimetableEntryMutation.isPending
+                                                ? "Adding..."
+                                                : "Add to Timetable"}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleViewTimetable}
+                            >
+                                View All
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoadingTimetable ? (
+                            <div className="flex items-center justify-center py-8">
+                                <p className="text-muted-foreground">
+                                    Loading timetable...
+                                </p>
+                            </div>
+                        ) : recentTimetableEntries.length === 0 ? (
+                            <div className="text-center py-8">
+                                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold mb-2">
+                                    No Classes Scheduled
+                                </h3>
+                                <p className="text-muted-foreground mb-4">
+                                    You haven't added any classes to your
+                                    timetable yet.
+                                </p>
+                                <Button
+                                    onClick={() => setIsCreateDialogOpen(true)}
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Your First Class
+                                </Button>
+                            </div>
+                        ) : (
+                            <Table className="overflow-x-hidden">
+                                <TableHeader className="overflow-x-clip">
+                                    <TableRow>
+                                        <TableHead>Day</TableHead>
+                                        <TableHead>Time</TableHead>
+                                        <TableHead>Course</TableHead>
+                                        <TableHead>Location</TableHead>
+                                        <TableHead className="text-right">
+                                            Semester
+                                        </TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentTimetableEntries.map((entry) => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell>{entry.day}</TableCell>
+                                            <TableCell>{entry.time}</TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    variant="link"
+                                                    className="h-auto p-0 font-medium"
+                                                    onClick={() =>
+                                                        handleViewCourse(
+                                                            entry.course
+                                                                ?.code || ""
+                                                        )
+                                                    }
+                                                >
+                                                    {entry.course?.code}
+                                                </Button>
+                                            </TableCell>
+                                            <TableCell>
+                                                {entry.location}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Badge variant="outline">
+                                                    Semester {entry.semester}
+                                                </Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Student Information</CardTitle>
-                        <CardDescription>Your academic profile</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16">
-                                    {currentUser.avatar ? (
-                                        <AvatarImage
-                                            // src={currentUser.avatar || "/images/login.jpg"}
-                                            src={"/images/login.jpg"}
-                                            alt={currentUser.name}
-                                        />
-                                    ) : (
-                                        <AvatarFallback>
-                                            {currentUser.name.charAt(0)}
-                                        </AvatarFallback>
-                                    )}
-                                </Avatar>
-                                <div>
-                                    <h3 className="font-semibold">
-                                        {currentUser.name}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {currentUser.email}
-                                    </p>
-                                </div>
-                            </div>
-                            <Separator />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        Matric Number
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {currentUser.matricNumber}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">Level</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {currentUser.level}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        Department
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {currentUser.department}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        Faculty
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {currentUser.faculty}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">
-                            View Full Profile
-                        </Button>
-                    </CardFooter>
-                </Card>
+                <RecentlyAccessedCard />
             </div>
         </div>
     );

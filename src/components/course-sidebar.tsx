@@ -137,10 +137,7 @@ export function CourseSidebar() {
                 <SidebarMenu>
                     {bookmarks.map((bookmark) => (
                         <SidebarMenuItem key={bookmark.id}>
-                            <SidebarMenuButton
-                                asChild
-                                tooltip={bookmark.title}
-                            >
+                            <SidebarMenuButton asChild tooltip={bookmark.title}>
                                 <a href={bookmark.url}>
                                     <bookmark.icon className="h-4 w-4 shrink-0" />
                                     <span>{bookmark.title}</span>
