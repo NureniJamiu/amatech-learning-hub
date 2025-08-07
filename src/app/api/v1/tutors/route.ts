@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 // import { isAdminUser } from "@/helpers";
 
 import prisma from "@/lib/prisma";
+import {
+    handleDatabaseError,
+    validateRequestBody,
+    validateEmail,
+} from "@/lib/db-utils";
 
 // GET /api/tutors - Get all tutors with optional filtering
 export async function GET(request: NextRequest) {
@@ -84,10 +89,32 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { name, email, avatar } = body;
 
-        if (!name || !email) {
+        // Validate required fields
+        const validationError = validateRequestBody(body, ["name", "email"]);
+        if (validationError) {
             return NextResponse.json(
-                { message: "Name and email are required" },
+                { message: validationError },
                 { status: 400 }
+            );
+        }
+
+        // Validate email format
+        if (!validateEmail(email)) {
+            return NextResponse.json(
+                { message: "Please provide a valid email address" },
+                { status: 400 }
+            );
+        }
+
+        // Check if tutor with the same email already exists
+        const existingTutor = await prisma.tutor.findUnique({
+            where: { email },
+        });
+
+        if (existingTutor) {
+            return NextResponse.json(
+                { message: "A tutor with this email already exists" },
+                { status: 409 }
             );
         }
 
@@ -101,10 +128,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(tutor, { status: 201 });
     } catch (error) {
-        console.error("Error creating tutor:", error);
-        return NextResponse.json(
-            { message: "Failed to create tutor" },
-            { status: 500 }
-        );
+        return handleDatabaseError(error, "tutor creation");
     }
 }

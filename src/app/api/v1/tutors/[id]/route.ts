@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 // import { isAdminUser } from "@/helpers";
 
 import prisma from "@/lib/prisma";
+import {
+    handleDatabaseError,
+    validateRequestBody,
+    validateEmail,
+} from "@/lib/db-utils";
 
 // PUT /api/tutors/[id] - Update a tutor by ID (admin only)
 export async function PUT(
@@ -26,7 +31,7 @@ export async function PUT(
         //     );
         // }
 
-        const {id: tutorId} = await params;
+        const { id: tutorId } = await params;
         if (!tutorId) {
             return NextResponse.json(
                 { message: "Tutor ID is required" },
@@ -49,9 +54,19 @@ export async function PUT(
         const body = await request.json();
         const { name, email, avatar } = body;
 
-        if (!name || !email) {
+        // Validate required fields
+        const validationError = validateRequestBody(body, ["name", "email"]);
+        if (validationError) {
             return NextResponse.json(
-                { message: "Name and email are required" },
+                { message: validationError },
+                { status: 400 }
+            );
+        }
+
+        // Validate email format
+        if (!validateEmail(email)) {
+            return NextResponse.json(
+                { message: "Please provide a valid email address" },
                 { status: 400 }
             );
         }
@@ -95,11 +110,7 @@ export async function PUT(
 
         return NextResponse.json(transformedTutor);
     } catch (error) {
-        console.error("Error updating tutor:", error);
-        return NextResponse.json(
-            { message: "Failed to update tutor" },
-            { status: 500 }
-        );
+        return handleDatabaseError(error, "tutor update");
     }
 }
 
@@ -125,7 +136,7 @@ export async function DELETE(
         //     );
         // }
 
-        const {id: tutorId} = await params;
+        const { id: tutorId } = await params;
         if (!tutorId) {
             return NextResponse.json(
                 { message: "Tutor ID is required" },
@@ -152,7 +163,8 @@ export async function DELETE(
         if (existingTutor.courses.length > 0) {
             return NextResponse.json(
                 {
-                    message: "Cannot delete tutor with associated courses. Please remove course associations first."
+                    message:
+                        "Cannot delete tutor with associated courses. Please remove course associations first.",
                 },
                 { status: 400 }
             );
@@ -168,10 +180,6 @@ export async function DELETE(
             { status: 200 }
         );
     } catch (error) {
-        console.error("Error deleting tutor:", error);
-        return NextResponse.json(
-            { message: "Failed to delete tutor" },
-            { status: 500 }
-        );
+        return handleDatabaseError(error, "tutor deletion");
     }
 }

@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 // import { isAdminUser } from "@/helpers";
 
 import prisma from "@/lib/prisma";
+import {
+    handleDatabaseError,
+    validateRequestBody,
+    validatePositiveInteger,
+} from "@/lib/db-utils";
 
 // GET /api/courses/[id] - Get a single course by ID
 export async function GET(
@@ -77,7 +82,7 @@ export async function PUT(
         //     );
         // }
 
-        const {courseId} = await params;
+        const { courseId } = await params;
         if (!courseId) {
             return NextResponse.json(
                 { message: "Course ID is required" },
@@ -101,43 +106,104 @@ export async function PUT(
         const { code, title, units, level, semester, description, tutorIds } =
             body;
 
-        if (!code || !title || !level || !semester) {
+        // Validate required fields
+        const validationError = validateRequestBody(body, [
+            "code",
+            "title",
+            "level",
+            "semester",
+        ]);
+        if (validationError) {
             return NextResponse.json(
-                { message: "Missing required fields" },
+                { message: validationError },
                 { status: 400 }
             );
         }
 
-        const updatedCourse = await prisma.course.update({
-            where: { id: courseId },
-            data: {
-                code,
-                title,
-                units: Number.parseInt(units),
-                level: Number.parseInt(level),
-                semester: Number.parseInt(semester),
-                description,
-            },
-            include: {
-                tutors: {
-                    include: {
-                        tutor: true,
-                    },
-                },
-                materials: true,
-                pastQuestions: true,
-            },
-        });
-
-        // Assign tutors if provided
-        if (tutorIds && tutorIds.length > 0) {
-            await prisma.courseToTutor.createMany({
-                data: tutorIds.map((tutorId: string) => ({
-                    courseId: updatedCourse.id,
-                    tutorId,
-                })),
-            });
+        // Validate numeric fields
+        const unitsError = validatePositiveInteger(units || 2, "units");
+        if (unitsError) {
+            return NextResponse.json({ message: unitsError }, { status: 400 });
         }
+
+        const levelError = validatePositiveInteger(level, "level");
+        if (levelError) {
+            return NextResponse.json({ message: levelError }, { status: 400 });
+        }
+
+        const semesterError = validatePositiveInteger(semester, "semester");
+        if (semesterError) {
+            return NextResponse.json(
+                { message: semesterError },
+                { status: 400 }
+            );
+        }
+
+        // Validate semester is 1 or 2
+        if (![1, 2].includes(Number(semester))) {
+            return NextResponse.json(
+                { message: "Semester must be 1 or 2" },
+                { status: 400 }
+            );
+        }
+
+        // Use a transaction to handle course update and tutor assignments atomically
+        const updatedCourse = await prisma.$transaction(async (tx) => {
+            // Update the course
+            const course = await tx.course.update({
+                where: { id: courseId },
+                data: {
+                    code,
+                    title,
+                    units: Number.parseInt(units),
+                    level: Number.parseInt(level),
+                    semester: Number.parseInt(semester),
+                    description,
+                },
+            });
+
+            // Handle tutor assignments
+            if (tutorIds && Array.isArray(tutorIds)) {
+                // First, remove all existing tutor assignments for this course
+                await tx.courseToTutor.deleteMany({
+                    where: { courseId: course.id },
+                });
+
+                // Then, add the new tutor assignments if there are any
+                if (tutorIds.length > 0) {
+                    // Verify all tutor IDs exist before creating assignments
+                    const tutorsExist = await tx.tutor.findMany({
+                        where: { id: { in: tutorIds } },
+                        select: { id: true },
+                    });
+
+                    if (tutorsExist.length !== tutorIds.length) {
+                        throw new Error("One or more tutor IDs are invalid");
+                    }
+
+                    await tx.courseToTutor.createMany({
+                        data: tutorIds.map((tutorId: string) => ({
+                            courseId: course.id,
+                            tutorId,
+                        })),
+                    });
+                }
+            }
+
+            // Return the course with all relationships
+            return tx.course.findUnique({
+                where: { id: course.id },
+                include: {
+                    tutors: {
+                        include: {
+                            tutor: true,
+                        },
+                    },
+                    materials: true,
+                    pastQuestions: true,
+                },
+            });
+        });
 
         // Transform the response to match the GET route format
         const transformedCourse = {
@@ -147,11 +213,7 @@ export async function PUT(
 
         return NextResponse.json(transformedCourse);
     } catch (error) {
-        console.error("Error updating course:", error);
-        return NextResponse.json(
-            { message: "Failed to update course" },
-            { status: 500 }
-        );
+        return handleDatabaseError(error, "course update");
     }
 }
 

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth, requireAdmin } from "@/middleware/auth.middleware";
 import { isAdminUser } from "@/helpers";
+import {
+    handleDatabaseError,
+    validateRequestBody,
+    validatePositiveInteger,
+} from "@/lib/db-utils";
 
 // GET /api/courses - Get all courses with optional filtering
 export async function GET(request: NextRequest) {
@@ -95,9 +100,9 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error("Error fetching courses:", error);
         console.error("Error details:", {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
+            name: (error as Error)?.name,
+            message: (error as Error)?.message,
+            stack: (error as Error)?.stack,
         });
         return NextResponse.json(
             { message: "Failed to fetch courses" },
@@ -119,9 +124,43 @@ export async function POST(request: NextRequest) {
         const { code, title, units, level, semester, description, tutorIds } =
             body;
 
-        if (!code || !title || !level || !semester) {
+        // Validate required fields
+        const validationError = validateRequestBody(body, [
+            "code",
+            "title",
+            "level",
+            "semester",
+        ]);
+        if (validationError) {
             return NextResponse.json(
-                { message: "Missing required fields" },
+                { message: validationError },
+                { status: 400 }
+            );
+        }
+
+        // Validate numeric fields
+        const unitsError = validatePositiveInteger(units || 2, "units");
+        if (unitsError) {
+            return NextResponse.json({ message: unitsError }, { status: 400 });
+        }
+
+        const levelError = validatePositiveInteger(level, "level");
+        if (levelError) {
+            return NextResponse.json({ message: levelError }, { status: 400 });
+        }
+
+        const semesterError = validatePositiveInteger(semester, "semester");
+        if (semesterError) {
+            return NextResponse.json(
+                { message: semesterError },
+                { status: 400 }
+            );
+        }
+
+        // Validate semester is 1 or 2
+        if (![1, 2].includes(Number(semester))) {
+            return NextResponse.json(
+                { message: "Semester must be 1 or 2" },
                 { status: 400 }
             );
         }
@@ -138,38 +177,53 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const course = await prisma.course.create({
-            data: {
-                code,
-                title,
-                units: Number.parseInt(units) || 2,
-                level: Number.parseInt(level),
-                semester: Number.parseInt(semester),
-                description: description || "",
-            },
-        });
-
-        // Assign tutors if provided
-        if (tutorIds && tutorIds.length > 0) {
-            await prisma.courseToTutor.createMany({
-                data: tutorIds.map((tutorId: string) => ({
-                    courseId: course.id,
-                    tutorId,
-                })),
-            });
-        }
-
-        const createdCourse = await prisma.course.findUnique({
-            where: { id: course.id },
-            include: {
-                tutors: {
-                    include: {
-                        tutor: true,
-                    },
+        // Use a transaction to ensure atomicity
+        const createdCourse = await prisma.$transaction(async (tx) => {
+            // Create the course
+            const course = await tx.course.create({
+                data: {
+                    code,
+                    title,
+                    units: Number.parseInt(units) || 2,
+                    level: Number.parseInt(level),
+                    semester: Number.parseInt(semester),
+                    description: description || "",
                 },
-                materials: true,
-                pastQuestions: true,
-            },
+            });
+
+            // Assign tutors if provided
+            if (tutorIds && Array.isArray(tutorIds) && tutorIds.length > 0) {
+                // Verify all tutor IDs exist before creating assignments
+                const tutorsExist = await tx.tutor.findMany({
+                    where: { id: { in: tutorIds } },
+                    select: { id: true },
+                });
+
+                if (tutorsExist.length !== tutorIds.length) {
+                    throw new Error("One or more tutor IDs are invalid");
+                }
+
+                await tx.courseToTutor.createMany({
+                    data: tutorIds.map((tutorId: string) => ({
+                        courseId: course.id,
+                        tutorId,
+                    })),
+                });
+            }
+
+            // Return the course with all relationships
+            return tx.course.findUnique({
+                where: { id: course.id },
+                include: {
+                    tutors: {
+                        include: {
+                            tutor: true,
+                        },
+                    },
+                    materials: true,
+                    pastQuestions: true,
+                },
+            });
         });
 
         const transformedCourse = {
@@ -179,11 +233,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(transformedCourse, { status: 201 });
     } catch (error) {
-        console.error("Error creating course:", error);
-        return NextResponse.json(
-            { message: "Failed to create course" },
-            { status: 500 }
-        );
+        return handleDatabaseError(error, "course creation");
     }
 }
 
