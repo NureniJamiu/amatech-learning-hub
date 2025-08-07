@@ -121,6 +121,12 @@ export function useCurrentUser() {
         retry: false,
         // Don't show error for unauthenticated users
         throwOnError: false,
+        // Disable automatic refetching to prevent unnecessary calls
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        // Cache the data for a reasonable time
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 }
 
@@ -139,7 +145,9 @@ export function useLogin() {
             // Store both token and user data in localStorage using utility
             userStorage.setUser(data.user, data.token);
             queryClient.setQueryData(authKeys.user, data.user);
-            router.push("/dashboard");
+
+            // Use window.location for a clean redirect to avoid any router issues
+            window.location.href = "/dashboard";
         },
         onError: (error) => {
             showApiError(error);

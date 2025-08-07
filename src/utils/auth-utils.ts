@@ -34,31 +34,36 @@ export const requireAuth = () => {
 export const redirectIfAuthenticated = () => {
     if (typeof window === "undefined") return;
 
-    // Check if user data and token exist using the same logic as userStorage
-    const userData = localStorage.getItem("user");
-    const token = localStorage.getItem("token") || cookieUtils.get("token");
+    // Use a timeout to avoid conflicts with React rendering
+    setTimeout(() => {
+        // Check if user data and token exist using the same logic as userStorage
+        const userData = localStorage.getItem("user");
+        const token = localStorage.getItem("token") || cookieUtils.get("token");
 
-    // Only redirect if both user data and token are present and valid
-    if (userData && token) {
-        try {
-            const user = JSON.parse(userData);
-            // Additional check: make sure the user object has required properties
-            if (user && user.id && user.email) {
-                console.log("User is authenticated, redirecting to dashboard");
-                window.location.href = "/dashboard";
-            } else {
-                console.log("Invalid user data found, clearing storage");
-                // Clear invalid data
+        // Only redirect if both user data and token are present and valid
+        if (userData && token) {
+            try {
+                const user = JSON.parse(userData);
+                // Additional check: make sure the user object has required properties
+                if (user && user.id && user.email) {
+                    console.log(
+                        "User is authenticated, redirecting to dashboard"
+                    );
+                    window.location.href = "/dashboard";
+                } else {
+                    console.log("Invalid user data found, clearing storage");
+                    // Clear invalid data
+                    userStorage.clearUser();
+                }
+            } catch (error) {
+                console.log("Error parsing user data, clearing storage");
+                // Clear corrupted data
                 userStorage.clearUser();
             }
-        } catch (error) {
-            console.log("Error parsing user data, clearing storage");
-            // Clear corrupted data
-            userStorage.clearUser();
+        } else {
+            console.log("No valid authentication found, staying on login page");
         }
-    } else {
-        console.log("No valid authentication found, staying on login page");
-    }
+    }, 100);
 };
 
 /**

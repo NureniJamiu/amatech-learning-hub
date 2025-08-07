@@ -12,94 +12,114 @@ const adminRoutes = ["/admin"];
 const publicApiRoutes = ["/api/v1/auth/login", "/api/v1/auth/signup"];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const referer = request.headers.get("referer");
+    const { pathname } = request.nextUrl;
+    const referer = request.headers.get("referer");
 
-  console.log("Middleware processing:", pathname, "Referer:", referer);
+    console.log("Middleware processing:", pathname, "Referer:", referer);
 
-  // Skip middleware for static files and Next.js internals
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/favicon') ||
-    pathname.startsWith('/images/') ||
-    pathname.startsWith('/public/') ||
-    pathname.includes('.svg') ||
-    pathname.includes('.png') ||
-    pathname.includes('.jpg') ||
-    pathname.includes('.jpeg') ||
-    pathname.includes('.gif') ||
-    pathname.includes('.ico') ||
-    pathname.includes('.css') ||
-    pathname.includes('.js')
-  ) {
+    // Skip middleware for static files and Next.js internals
+    if (
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/favicon") ||
+        pathname.startsWith("/images/") ||
+        pathname.startsWith("/public/") ||
+        pathname.includes(".svg") ||
+        pathname.includes(".png") ||
+        pathname.includes(".jpg") ||
+        pathname.includes(".jpeg") ||
+        pathname.includes(".gif") ||
+        pathname.includes(".ico") ||
+        pathname.includes(".css") ||
+        pathname.includes(".js")
+    ) {
+        return NextResponse.next();
+    }
+
+    // Check if it's a public route
+    if (publicRoutes.includes(pathname)) {
+        return NextResponse.next();
+    }
+
+    // Check if it's a public API route
+    if (publicApiRoutes.some((route) => pathname.startsWith(route))) {
+        return NextResponse.next();
+    }
+
+    // Detect potential redirect loops - if we've been redirected multiple times
+    const redirectCount = parseInt(
+        request.headers.get("x-redirect-count") || "0"
+    );
+    if (redirectCount > 2) {
+        console.log("Potential redirect loop detected, breaking loop");
+        return NextResponse.next();
+    }
+
+    // Get token from cookies or authorization header
+    const token =
+        request.cookies.get("token")?.value ||
+        request.headers.get("authorization")?.replace("Bearer ", "");
+
+    // If no token, redirect to login
+    if (!token) {
+        console.log("No token found for", pathname, "redirecting to login");
+        if (pathname.startsWith("/api/")) {
+            return NextResponse.json(
+                { message: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+        // Prevent redirect if already on login page
+        if (pathname === "/login") {
+            return NextResponse.next();
+        }
+        const response = NextResponse.redirect(new URL("/login", request.url));
+        response.headers.set("x-redirect-count", String(redirectCount + 1));
+        return response;
+    }
+
+    // Verify token
+    const decoded = verifyAuthToken(token);
+    if (!decoded) {
+        console.log("Invalid token for", pathname, "redirecting to login");
+        if (pathname.startsWith("/api/")) {
+            return NextResponse.json(
+                { message: "Invalid token" },
+                { status: 401 }
+            );
+        }
+        // Prevent redirect if already on login page
+        if (pathname === "/login") {
+            return NextResponse.next();
+        }
+        const response = NextResponse.redirect(new URL("/login", request.url));
+        response.headers.set("x-redirect-count", String(redirectCount + 1));
+        return response;
+    }
+
+    console.log("Token verified for", pathname, "allowing access");
+
+    // If user is authenticated and trying to access login page, redirect to dashboard
+    // But only if the request is not coming from a redirect to prevent loops
+    if (
+        pathname === "/login" &&
+        !referer?.includes("/login") &&
+        redirectCount < 2
+    ) {
+        console.log(
+            "Authenticated user on login page, redirecting to dashboard"
+        );
+        const response = NextResponse.redirect(
+            new URL("/dashboard", request.url)
+        );
+        response.headers.set("x-redirect-count", String(redirectCount + 1));
+        return response;
+    }
+
+    // For admin routes, we'd need to check if user is admin
+    // This would require a database call, so we'll handle it in the component level
+
     return NextResponse.next();
-  }
-
-  // Check if it's a public route
-  if (publicRoutes.includes(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Check if it's a public API route
-  if (publicApiRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-
-  // Detect potential redirect loops
-  if (pathname === "/dashboard" && referer && referer.includes("/login")) {
-    console.log("Potential redirect loop detected - dashboard->login->dashboard");
-  }
-
-  // Get token from cookies or authorization header
-  const token = request.cookies.get("token")?.value ||
-    request.headers.get("authorization")?.replace("Bearer ", "");
-
-  // If no token, redirect to login
-  if (!token) {
-    console.log("No token found for", pathname, "redirecting to login");
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-    // Prevent redirect if already on login page
-    if (pathname === "/login") {
-      return NextResponse.next();
-    }
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Verify token
-  const decoded = verifyAuthToken(token);
-  if (!decoded) {
-    console.log("Invalid token for", pathname, "redirecting to login");
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json(
-        { message: "Invalid token" },
-        { status: 401 }
-      );
-    }
-    // Prevent redirect if already on login page
-    if (pathname === "/login") {
-      return NextResponse.next();
-    }
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  console.log("Token verified for", pathname, "allowing access");
-
-  // If user is authenticated and trying to access login page, redirect to dashboard
-  if (pathname === "/login") {
-    console.log("Authenticated user on login page, redirecting to dashboard");
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // For admin routes, we'd need to check if user is admin
-  // This would require a database call, so we'll handle it in the component level
-
-  return NextResponse.next();
 }
 
 export const config = {

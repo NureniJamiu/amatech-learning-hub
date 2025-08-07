@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLogin, userStorage } from "@/hooks/use-auth";
-import { redirectIfAuthenticated } from "@/utils/auth-utils";
 import { cookieUtils } from "@/utils/cookies";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -89,32 +88,6 @@ export function LoginForm({
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
-
-    useEffect(() => {
-        // Simple check - don't redirect if user is not properly authenticated
-        try {
-            const userData = localStorage.getItem("user");
-            const token =
-                localStorage.getItem("token") || cookieUtils.get("token");
-
-            if (userData && token) {
-                const user = JSON.parse(userData);
-                if (user?.id && user?.email) {
-                    console.log(
-                        "User is authenticated, should redirect to dashboard"
-                    );
-                    // Only redirect if we have valid user data
-                    window.location.href = "/dashboard";
-                }
-            }
-        } catch (error) {
-            console.log("Error checking auth, clearing storage:", error);
-            // Clear any corrupted data
-            localStorage.removeItem("user");
-            localStorage.removeItem("token");
-            cookieUtils.delete("token");
-        }
-    }, []);
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
