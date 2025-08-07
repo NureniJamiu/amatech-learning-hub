@@ -29,20 +29,27 @@ export function useUserTimetable(userId: string) {
     });
 }
 
-// Hook to fetch current user's timetable entries
+// Hook to fetch current user's timetable entries (optimized)
 export function useCurrentUserTimetable() {
     return useQuery({
         queryKey: timetableKeys.user("current"),
         queryFn: () => apiClient.get<TimetableEntry[]>("/timetable"),
+        staleTime: 1000 * 60 * 10, // 10 minutes (timetable is relatively stable)
+        gcTime: 1000 * 60 * 30, // 30 minutes
+        placeholderData: (previousData) => previousData,
     });
 }
 
-// Hook to fetch current user's timetable entries for a specific semester
+// Hook to fetch current user's timetable entries for a specific semester (optimized)
 export function useCurrentUserTimetableBySemester(semester: number) {
     return useQuery({
         queryKey: timetableKeys.userSemester("current", semester),
         queryFn: () =>
             apiClient.get<TimetableEntry[]>(`/timetable?semester=${semester}`),
+        enabled: !!semester,
+        staleTime: 1000 * 60 * 15, // 15 minutes (semester-specific data is more stable)
+        gcTime: 1000 * 60 * 60, // 1 hour
+        placeholderData: (previousData) => previousData,
     });
 }
 

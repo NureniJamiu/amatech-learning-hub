@@ -15,66 +15,140 @@ export type BookmarkInput = {
   icon: string;
 };
 
-// Hook to fetch user's bookmarks
+// Hook to fetch user's bookmarks (optimized)
 export function useUserBookmarks(userId: string) {
   return useQuery({
     queryKey: bookmarkKeys.user(userId),
     queryFn: () => apiClient.get<Bookmark[]>(`/users/${userId}/bookmarks`),
     enabled: !!userId, // Only run if userId is provided
+    staleTime: 1000 * 60 * 10, // 10 minutes (bookmarks don't change often)
+    gcTime: 1000 * 60 * 30, // 30 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 
-// Hook to fetch current user's bookmarks
+// Hook to fetch current user's bookmarks (optimized)
 export function useCurrentUserBookmarks() {
   return useQuery({
     queryKey: bookmarkKeys.user("current"),
     queryFn: () => apiClient.get<Bookmark[]>("/bookmarks"),
+    staleTime: 1000 * 60 * 10, // 10 minutes (bookmarks don't change often)
+    gcTime: 1000 * 60 * 30, // 30 minutes
+    placeholderData: (previousData) => previousData,
   });
 }
 
-// Hook to add a bookmark
+// Hook to add a bookmark (optimized)
 export function useAddBookmark() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (bookmarkData: BookmarkInput) =>
       apiClient.post<Bookmark>("/bookmarks", bookmarkData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
+    onMutate: async (newBookmark) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: bookmarkKeys.user("current") });
+
+      // Snapshot the previous value
+      const previousBookmarks = queryClient.getQueryData(bookmarkKeys.user("current"));
+
+      // Optimistically update
+      queryClient.setQueryData(
+        bookmarkKeys.user("current"),
+        (old: Bookmark[] | undefined) => {
+          if (!old) return [{ ...newBookmark, id: "temp-id" } as Bookmark];
+          return [...old, { ...newBookmark, id: "temp-id" } as Bookmark];
+        }
+      );
+
+      return { previousBookmarks };
     },
-    onError: (error) => {
-      showApiError(error);
+    onError: (err, newBookmark, context) => {
+      // Rollback on error
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(bookmarkKeys.user("current"), context.previousBookmarks);
+      }
+      showApiError(err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
     },
   });
 }
 
-// Hook to update a bookmark
+// Hook to update a bookmark (optimized)
 export function useUpdateBookmark() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BookmarkInput> }) =>
       apiClient.put<Bookmark>(`/bookmarks/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: bookmarkKeys.user("current") });
+
+      // Snapshot the previous value
+      const previousBookmarks = queryClient.getQueryData(bookmarkKeys.user("current"));
+
+      // Optimistically update
+      queryClient.setQueryData(
+        bookmarkKeys.user("current"),
+        (old: Bookmark[] | undefined) => {
+          if (!old) return old;
+          return old.map(bookmark => 
+            bookmark.id === id ? { ...bookmark, ...data } : bookmark
+          );
+        }
+      );
+
+      return { previousBookmarks };
     },
-    onError: (error) => {
-      showApiError(error);
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(bookmarkKeys.user("current"), context.previousBookmarks);
+      }
+      showApiError(err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
     },
   });
 }
 
-// Hook to delete a bookmark
+// Hook to delete a bookmark (optimized)
 export function useDeleteBookmark() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => apiClient.delete<void>(`/bookmarks/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
+    onMutate: async (bookmarkId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: bookmarkKeys.user("current") });
+
+      // Snapshot the previous value
+      const previousBookmarks = queryClient.getQueryData(bookmarkKeys.user("current"));
+
+      // Optimistically remove
+      queryClient.setQueryData(
+        bookmarkKeys.user("current"),
+        (old: Bookmark[] | undefined) => {
+          if (!old) return old;
+          return old.filter(bookmark => bookmark.id !== bookmarkId);
+        }
+      );
+
+      return { previousBookmarks };
     },
-    onError: (error) => {
-      showApiError(error);
+    onError: (err, bookmarkId, context) => {
+      // Rollback on error
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(bookmarkKeys.user("current"), context.previousBookmarks);
+      }
+      showApiError(err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.user("current") });
     },
   });
 }

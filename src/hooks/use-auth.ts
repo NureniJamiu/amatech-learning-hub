@@ -104,7 +104,7 @@ export const checkAuthStatus = (): {
     }
 };
 
-// Hook to get the current authenticated user
+// Hook to get the current authenticated user (optimized)
 export function useCurrentUser() {
     return useQuery({
         queryKey: authKeys.user,
@@ -123,8 +123,11 @@ export function useCurrentUser() {
         refetchOnMount: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        // Cache the data for a reasonable time
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        // Cache the data for a longer time since user data doesn't change often
+        staleTime: 15 * 60 * 1000, // 15 minutes
+        gcTime: 60 * 60 * 1000, // 1 hour
+        // Keep previous data while loading new data
+        placeholderData: (previousData) => previousData,
     });
 }
 

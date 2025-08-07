@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient, showApiError } from "@/lib/api-client";
 import type { Material, Material2 } from "@/types";
 
@@ -8,6 +8,8 @@ export const materialKeys = {
     lists: () => [...materialKeys.all, "list"] as const,
     list: (filters: MaterialFilters) =>
         [...materialKeys.lists(), filters] as const,
+    infinite: (filters: Omit<MaterialFilters, 'page'>) =>
+        [...materialKeys.lists(), "infinite", filters] as const,
     details: () => [...materialKeys.all, "detail"] as const,
     detail: (id: string) => [...materialKeys.details(), id] as const,
     byCourse: (courseId: string) =>
@@ -29,31 +31,64 @@ export type MaterialInput = {
     type?: string;
 };
 
-// Hook to fetch materials with filters
+// Hook to fetch materials with filters (optimized)
 export function useMaterials(filters: MaterialFilters = {}) {
+    // Set reasonable default limit
+    const optimizedFilters = {
+        limit: 20, // Reduced from potentially large numbers
+        ...filters,
+    };
+
     return useQuery({
-        queryKey: materialKeys.list(filters),
+        queryKey: materialKeys.list(optimizedFilters),
         queryFn: () =>
             apiClient.get<{ materials: Material2[]; total: number }>(
                 "/materials",
                 {
-                    params: filters,
+                    params: optimizedFilters,
                 }
             ),
-        staleTime: 1000 * 60 * 2, // 2 minutes
-        gcTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 1000 * 60 * 3, // 3 minutes (materials change more frequently)
+        gcTime: 1000 * 60 * 10, // 10 minutes
+        placeholderData: (previousData) => previousData,
     });
 }
 
-// Hook to fetch materials for a specific course
+// Hook for infinite materials (better for large lists)
+export function useInfiniteMaterials(filters: Omit<MaterialFilters, 'page'> = {}) {
+    const optimizedFilters = {
+        limit: 20,
+        ...filters,
+    };
+
+    return useInfiniteQuery({
+        queryKey: materialKeys.infinite(optimizedFilters),
+        queryFn: ({ pageParam = 1 }) =>
+            apiClient.get<{ materials: Material2[]; total: number; page: number; totalPages: number }>("/materials", {
+                params: { ...optimizedFilters, page: pageParam },
+            }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            if (lastPage.page < lastPage.totalPages) {
+                return lastPage.page + 1;
+            }
+            return undefined;
+        },
+        staleTime: 1000 * 60 * 3, // 3 minutes
+        gcTime: 1000 * 60 * 10, // 10 minutes
+    });
+}
+
+// Hook to fetch materials for a specific course (optimized)
 export function useCoursesMaterials(courseId: string) {
     return useQuery({
         queryKey: materialKeys.byCourse(courseId),
         queryFn: () =>
             apiClient.get<Material[]>(`/courses/${courseId}/materials`),
         enabled: !!courseId, // Only run if courseId is provided
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        gcTime: 1000 * 60 * 10, // 10 minutes
+        staleTime: 1000 * 60 * 5, // 5 minutes (course materials are more stable)
+        gcTime: 1000 * 60 * 15, // 15 minutes
+        placeholderData: (previousData) => previousData,
     });
 }
 
@@ -64,11 +99,11 @@ export function useMaterial(id: string) {
         queryFn: () => apiClient.get<Material>(`/materials/${id}`),
         enabled: !!id, // Only run if ID is provided
         staleTime: 1000 * 60 * 10, // 10 minutes
-        gcTime: 1000 * 60 * 15, // 15 minutes
+        gcTime: 1000 * 60 * 20, // 20 minutes
     });
 }
 
-// Hook to upload a new material
+// Hook to upload a new material (optimized)
 export function useUploadMaterial() {
     const queryClient = useQueryClient();
 
@@ -85,7 +120,7 @@ export function useUploadMaterial() {
             return apiClient.post<Material2>("/materials", formData);
         },
         onMutate: async (newMaterial) => {
-            // Cancel any outgoing refetches
+            // Cancel any outgoing refetches for all related queries
             await queryClient.cancelQueries({ queryKey: materialKeys.lists() });
             await queryClient.cancelQueries({
                 queryKey: materialKeys.byCourse(newMaterial.courseId)
@@ -97,22 +132,24 @@ export function useUploadMaterial() {
                 materialKeys.byCourse(newMaterial.courseId)
             );
 
-            // Optimistically update the materials list
-            queryClient.setQueryData(
-                materialKeys.lists(),
+            // Create optimistic material
+            const optimisticMaterial = {
+                id: 'temp-id',
+                title: newMaterial.title,
+                fileUrl: newMaterial.file || '',
+                fileType: 'pdf',
+                createdAt: new Date().toISOString(),
+                course: { code: 'Loading...', title: 'Loading...' },
+                uploadedBy: { id: 'temp', firstname: 'Loading', lastname: '', email: '' }
+            } as Material2;
+
+            // Optimistically update all material list queries
+            queryClient.setQueriesData(
+                { queryKey: materialKeys.lists() },
                 (old: { materials: Material2[]; total: number } | undefined) => {
-                    if (!old) return { materials: [], total: 0 };
-                    const optimisticMaterial = {
-                        id: 'temp-id',
-                        title: newMaterial.title,
-                        fileUrl: newMaterial.file || '',
-                        fileType: 'pdf',
-                        createdAt: new Date().toISOString(),
-                        course: { code: 'Loading...', title: 'Loading...' },
-                        uploadedBy: { id: 'temp', firstname: 'Loading', lastname: '', email: '' }
-                    } as Material2;
+                    if (!old) return { materials: [optimisticMaterial], total: 1 };
                     return {
-                        materials: [...old.materials, optimisticMaterial],
+                        materials: [optimisticMaterial, ...old.materials], // Add to beginning for recent items
                         total: old.total + 1,
                     };
                 }
@@ -122,14 +159,8 @@ export function useUploadMaterial() {
             queryClient.setQueryData(
                 materialKeys.byCourse(newMaterial.courseId),
                 (old: Material[] | undefined) => {
-                    if (!old) return [];
-                    const optimisticMaterial = {
-                        id: 'temp-id',
-                        title: newMaterial.title,
-                        fileUrl: newMaterial.file || '',
-                        fileType: 'pdf',
-                    } as Material;
-                    return [...old, optimisticMaterial];
+                    if (!old) return [optimisticMaterial as Material];
+                    return [optimisticMaterial as Material, ...old];
                 }
             );
 
@@ -138,7 +169,7 @@ export function useUploadMaterial() {
         onError: (err, newMaterial, context) => {
             // Rollback on error
             if (context?.previousMaterials) {
-                queryClient.setQueryData(materialKeys.lists(), context.previousMaterials);
+                queryClient.setQueriesData({ queryKey: materialKeys.lists() }, context.previousMaterials);
             }
             if (context?.previousCourseMaterials) {
                 queryClient.setQueryData(
@@ -154,26 +185,31 @@ export function useUploadMaterial() {
             queryClient.invalidateQueries({
                 queryKey: materialKeys.byCourse(variables.courseId)
             });
+            // Also invalidate infinite queries
+            queryClient.invalidateQueries({ queryKey: materialKeys.infinite({}) });
         },
     });
 }
 
-// Hook to delete a material
+// Hook to delete a material (optimized)
 export function useDeleteMaterial() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: (id: string) => apiClient.delete<Material2>(`/materials/${id}`),
         onMutate: async (materialId) => {
+            // Get the material data before deletion for optimistic updates
+            const materialToDelete = queryClient.getQueryData<Material2>(materialKeys.detail(materialId));
+            
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: materialKeys.lists() });
 
-            // Snapshot the previous value
+            // Snapshot the previous values
             const previousMaterials = queryClient.getQueryData(materialKeys.lists());
 
-            // Optimistically remove the material from lists
-            queryClient.setQueryData(
-                materialKeys.lists(),
+            // Optimistically remove the material from all list queries
+            queryClient.setQueriesData(
+                { queryKey: materialKeys.lists() },
                 (old: { materials: Material2[]; total: number } | undefined) => {
                     if (!old) return old;
                     return {
@@ -183,20 +219,26 @@ export function useDeleteMaterial() {
                 }
             );
 
-            return { previousMaterials };
+            return { previousMaterials, materialToDelete };
         },
         onError: (err, materialId, context) => {
             // Rollback on error
             if (context?.previousMaterials) {
-                queryClient.setQueryData(materialKeys.lists(), context.previousMaterials);
+                queryClient.setQueriesData({ queryKey: materialKeys.lists() }, context.previousMaterials);
             }
             showApiError(err);
         },
-        onSettled: (data, error, materialId) => {
+        onSettled: (data, error, materialId, context) => {
             // Always refetch after error or success
             queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
+            
             // Remove the individual material from cache
             queryClient.removeQueries({ queryKey: materialKeys.detail(materialId) });
+            
+            // Invalidate all course material queries (since we can't be sure which course)
+            queryClient.invalidateQueries({
+                queryKey: [...materialKeys.all, "course"]
+            });
         },
     });
 }

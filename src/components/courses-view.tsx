@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useAppContext } from "@/context/app-context";
-import { useCourses } from "@/hooks/use-courses";
+import { useUserLevelCourses } from "@/hooks/use-courses";
 import { CourseCard } from "@/components/course-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Course } from "@/types";
@@ -11,8 +11,11 @@ export function CoursesView() {
   const { setSelectedCourse, setCurrentView, currentUser } = useAppContext();
   const [activeSemester, setActiveSemester] = useState<"1" | "2">("1");
 
-  // Get courses from API
-  const { data: coursesResponse } = useCourses({ limit: 1000 });
+  // Get courses from API - using optimized hook for user's level
+  const { data: coursesResponse, isLoading } = useUserLevelCourses(
+    currentUser?.level || 0,
+    !!currentUser?.level
+  );
 
   // Filter courses by user's level and semester
   const coursesBySemester = useMemo(() => {
@@ -20,9 +23,7 @@ export function CoursesView() {
       return { semester1: [], semester2: [] };
     }
 
-    const userLevelCourses = coursesResponse.courses.filter(
-      (course: Course) => course.level === currentUser.level
-    );
+    const userLevelCourses = coursesResponse.courses;
 
     return {
       semester1: userLevelCourses.filter((course: Course) => course.semester === 1),
@@ -39,6 +40,14 @@ export function CoursesView() {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Loading user information...</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Loading courses...</p>
       </div>
     );
   }

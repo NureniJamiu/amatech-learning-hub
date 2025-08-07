@@ -43,7 +43,7 @@ import {
     useAddTimetableEntry,
     TimetableEntryInput,
 } from "@/hooks/use-timetable";
-import { useCourses } from "@/hooks/use-courses";
+import { useUserLevelSemesterCourses, useUserLevelCourses } from "@/hooks/use-courses";
 import { RecentlyAccessedCard } from "@/components/recently-accessed-card";
 
 // Import test utility (only in development)
@@ -89,11 +89,12 @@ export function DashboardView() {
     const { data: timetableEntries = [], isLoading: isLoadingTimetable } =
         useCurrentUserTimetable();
 
-    // Fetch courses for the user's level
-    const { data: coursesResponse } = useCourses({
-        level: currentUser?.level,
-        limit: 1000,
-    });
+    // Fetch courses for the user's level - using optimized hook
+    const { data: coursesResponse } = useUserLevelSemesterCourses(
+        currentUser?.level || 0,
+        currentUser?.currentSemester || 1,
+        !!currentUser?.level && !!currentUser?.currentSemester
+    );
 
     // Mutations
     const addTimetableEntryMutation = useAddTimetableEntry();
@@ -149,12 +150,7 @@ export function DashboardView() {
     }
 
     // Get user's courses for current semester
-    const userCourses =
-        coursesResponse?.courses?.filter(
-            (course) =>
-                course.level === currentUser?.level &&
-                course.semester === currentUser?.currentSemester
-        ) || [];
+    const userCourses = coursesResponse?.courses || [];
 
     // Get recent timetable entries (limit to upcoming classes)
     const recentTimetableEntries = timetableEntries.slice(0, 5);
@@ -167,11 +163,12 @@ export function DashboardView() {
         );
     }
 
-    // Get available courses for current user's level and semester
-    const availableCourses =
-        coursesResponse?.courses?.filter(
-            (course) => course.level === currentUser.level
-        ) || [];
+    // Get available courses for current user's level - using optimized hook
+    const { data: allLevelCoursesResponse } = useUserLevelCourses(
+        currentUser.level,
+        !!currentUser.level
+    );
+    const availableCourses = allLevelCoursesResponse?.courses || [];
 
     return (
         <div className="space-y-6">

@@ -67,6 +67,7 @@ import {
 import FileUploader from "../file-uploader";
 import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
+import type { Material2 } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Import your hooks
