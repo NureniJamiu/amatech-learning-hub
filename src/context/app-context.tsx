@@ -51,10 +51,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Update filters when user data is loaded (only once)
     useEffect(() => {
         if (currentUser && !userLoading) {
-            console.log("AppContext - Setting initial filters based on user:", {
-                userLevel: currentUser.level,
-                userSemester: currentUser.currentSemester,
-            });
             setFilterLevel(currentUser.level || 1);
             setFilterSemester(currentUser.currentSemester || 1);
         }
@@ -69,43 +65,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Filter courses based on level and semester
     const filteredCourses = useMemo(() => {
         if (!coursesResponse?.courses) {
-            console.log("AppContext - No courses data available");
             return [];
         }
 
-        console.log("AppContext - Filtering courses:", {
-            filterLevel,
-            filterSemester,
-            totalCourses: coursesResponse.courses.length,
-            allCourses: coursesResponse.courses.map((c) => ({
-                id: c.id,
-                code: c.code,
-                level: c.level,
-                semester: c.semester,
-            })),
-        });
-
         const filtered = coursesResponse.courses.filter((course) => {
-            const matches =
+            return (
                 course.level === filterLevel &&
-                course.semester === filterSemester;
-            console.log(
-                `Course ${course.code}: level=${course.level}, semester=${course.semester}, matches=${matches}`
+                course.semester === filterSemester
             );
-            return matches;
-        });
-
-        console.log("AppContext - Filtered courses result:", {
-            filterLevel,
-            filterSemester,
-            totalCourses: coursesResponse.courses.length,
-            filteredCount: filtered.length,
-            filteredCourses: filtered.map((c) => ({
-                id: c.id,
-                code: c.code,
-                level: c.level,
-                semester: c.semester,
-            })),
         });
 
         return filtered;

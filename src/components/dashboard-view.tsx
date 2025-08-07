@@ -37,14 +37,13 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
-import { CourseFilterTest } from "@/components/course-filter-test";
 
 export function DashboardView() {
     const { filteredCourses, setCurrentView, setSelectedCourse } =
@@ -191,9 +190,6 @@ export function DashboardView() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Debug component - remove in production */}
-            <CourseFilterTest />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">

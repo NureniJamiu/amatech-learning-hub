@@ -15,10 +15,22 @@ export function MainNav() {
     const {
         currentView,
         setCurrentView,
+        setSelectedCourse,
         isAdminMode,
         setIsAdminMode,
         currentUser,
     } = useAppContext();
+
+    // Function to handle navigation click
+    const handleNavClick = (title: string) => {
+        const viewName = getViewFromTitle(title);
+        setCurrentView(viewName);
+
+        // If navigating to courses, clear any selected course to show the courses list
+        if (viewName === "courses") {
+            setSelectedCourse(null);
+        }
+    };
 
     const handleAdminToggle = () => {
         setIsAdminMode(!isAdminMode);
@@ -54,9 +66,7 @@ export function MainNav() {
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
                                 isActive={isNavActive(item.title)}
-                                onClick={() =>
-                                    setCurrentView(getViewFromTitle(item.title))
-                                }
+                                onClick={() => handleNavClick(item.title)}
                             >
                                 <item.icon className="h-4 w-4" />
                                 <span>{item.title}</span>
