@@ -170,6 +170,10 @@ model SystemSettings {
   smtpPassword      String?
   fromEmail         String?
   fromName          String?
+  cacheLifetime     Int?     @default(3600)
+  maxUploadSize     Int?     @default(50)
+  sessionTimeout    Int?     @default(120)
+  debugMode         Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

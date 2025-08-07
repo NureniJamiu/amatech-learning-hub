@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     FileText,
     FileUp,
@@ -69,7 +69,6 @@ import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
 import type { Material2 } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 
 // Import your hooks
 import {
@@ -98,27 +97,9 @@ export function ContentManagement() {
     const { trackMaterialAccess, trackPastQuestionAccess } =
         useRecentlyAccessed();
 
-    // Listen for course creation to refresh the course list
-    useEffect(() => {
-        const handleCourseMutation = () => {
-            // Refetch courses when any course mutation happens
-            refetchCourses();
-        };
+    // React Query Hooks - declare these first
+    const queryClient = useQueryClient();
 
-        // Set up a listener for course cache invalidation
-        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-            if (
-                event.type === "updated" &&
-                event.query.queryKey[0] === "courses"
-            ) {
-                handleCourseMutation();
-            }
-        });
-
-        return unsubscribe;
-    }, [queryClient, refetchCourses]);
-
-    // React Query Hooks
     const {
         data: materialsResponse,
         isLoading: materialsLoading,
@@ -150,7 +131,25 @@ export function ContentManagement() {
         limit: 100, // Increased limit to ensure new courses are included
     });
 
-    const queryClient = useQueryClient();
+    // Listen for course creation to refresh the course list
+    useEffect(() => {
+        const handleCourseMutation = () => {
+            // Refetch courses when any course mutation happens
+            refetchCourses();
+        };
+
+        // Set up a listener for course cache invalidation
+        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+            if (
+                event.type === "updated" &&
+                event.query.queryKey[0] === "courses"
+            ) {
+                handleCourseMutation();
+            }
+        });
+
+        return unsubscribe;
+    }, [queryClient, refetchCourses]);
     const uploadMaterialMutation = useUploadMaterial();
     const deleteMaterialMutation = useDeleteMaterial();
     const uploadPastQuestionMutation = useUploadPastQuestion();

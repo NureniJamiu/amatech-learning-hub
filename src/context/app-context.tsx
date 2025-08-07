@@ -3,9 +3,10 @@
 import type React from "react";
 
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useCurrentUser } from "@/hooks/use-auth";
-import { useCourses } from "@/hooks/use-courses";
+import { apiClient } from "@/lib/api-client";
 import type { Course } from "@/types";
 
 type AppView = "dashboard" | "courses" | "timetable" | "ai-assistant";
@@ -39,10 +40,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Get current user from authentication
     const { data: currentUser, isLoading: userLoading } = useCurrentUser();
 
-    // Get courses data
-    const { data: coursesResponse, isLoading: coursesLoading } = useCourses({
-        limit: 1000,
+    // Get courses data - with error handling
+    const coursesQuery = useQuery({
+        queryKey: ["courses", { limit: 1000 }],
+        queryFn: () =>
+            apiClient.get<{ courses: Course[]; total: number }>("/courses", {
+                params: { limit: 1000 },
+            }),
+        enabled: !userLoading, // Only fetch courses after user is loaded
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 15, // 15 minutes
+        retry: 1, // Reduce retries to avoid cascading errors
+        refetchOnWindowFocus: false,
     });
+
+    const coursesResponse = coursesQuery.data;
+    const coursesLoading = coursesQuery.isLoading;
+    const coursesError = coursesQuery.error;
 
     // Initialize filters based on user level when user data is available
     const [filterLevel, setFilterLevel] = useState<number>(1);
@@ -68,7 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return [];
         }
 
-        const filtered = coursesResponse.courses.filter((course) => {
+        const filtered = coursesResponse.courses.filter((course: Course) => {
             return (
                 course.level === filterLevel &&
                 course.semester === filterSemester

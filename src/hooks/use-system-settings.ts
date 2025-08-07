@@ -8,18 +8,22 @@ export const settingsKeys = {
 
 // Types
 export type SystemSettings = {
-  id: string;
-  siteName: string;
-  siteDescription: string;
-  maintenanceMode: boolean;
-  allowRegistration: boolean;
-  defaultTheme: string;
-  smtpServer?: string;
-  smtpPort?: string;
-  smtpUsername?: string;
-  smtpPassword?: string;
-  fromEmail?: string;
-  fromName?: string;
+    id: string;
+    siteName: string;
+    siteDescription: string;
+    maintenanceMode: boolean;
+    allowRegistration: boolean;
+    defaultTheme: string;
+    smtpServer?: string;
+    smtpPort?: string;
+    smtpUsername?: string;
+    smtpPassword?: string;
+    fromEmail?: string;
+    fromName?: string;
+    cacheLifetime?: number;
+    maxUploadSize?: number;
+    sessionTimeout?: number;
+    debugMode?: boolean;
 };
 
 // Hook to fetch system settings (admin only)
