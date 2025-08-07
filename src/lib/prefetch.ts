@@ -124,17 +124,21 @@ export const warmUpCache = async (queryClient: QueryClient, user: User) => {
 export const invalidateUserQueries = (queryClient: QueryClient, oldLevel?: number, newLevel?: number) => {
     // Invalidate auth queries
     queryClient.invalidateQueries({ queryKey: authKeys.user });
-    
+
     // Invalidate old level queries if level changed
     if (oldLevel && oldLevel !== newLevel) {
-        queryClient.invalidateQueries({ queryKey: courseKeys.userLevel(oldLevel) });
+        queryClient.invalidateQueries({
+            queryKey: courseKeys.userLevel(oldLevel),
+        });
     }
-    
+
     // Invalidate new level queries
     if (newLevel) {
-        queryClient.invalidateQueries({ queryKey: courseKeys.userLevel(newLevel) });
+        queryClient.invalidateQueries({
+            queryKey: courseKeys.userLevel(newLevel),
+        });
     }
-    
+
     // Invalidate timetable
     queryClient.invalidateQueries({ queryKey: ["timetable"] });
 };

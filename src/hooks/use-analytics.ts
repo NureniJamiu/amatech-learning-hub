@@ -103,7 +103,7 @@ export function useAnalyticsOverview() {
 // Hook to get course usage analytics (user-specific and optimized)
 export function useCourseUsageAnalytics() {
     const { data: currentUser } = useCurrentUser();
-    
+
     // Only fetch courses for the user's level to reduce data
     const { data: coursesResponse } = useUserLevelCourses(
         currentUser?.level || 0,
@@ -164,8 +164,14 @@ export function useContentDistributionAnalytics() {
         queryKey: analyticsKeys.contentDistribution(),
         queryFn: () => {
             // Use total counts from response if available, otherwise use array length
-            const materialCount = materialsResponse?.total || materialsResponse?.materials?.length || 0;
-            const pastQuestionCount = pastQuestionsResponse?.total || pastQuestionsResponse?.pastQuestions?.length || 0;
+            const materialCount =
+                materialsResponse?.total ||
+                materialsResponse?.materials?.length ||
+                0;
+            const pastQuestionCount =
+                pastQuestionsResponse?.total ||
+                pastQuestionsResponse?.pastQuestions?.length ||
+                0;
 
             const contentDistribution: ContentDistribution[] = [
                 {
@@ -191,13 +197,15 @@ export function useContentDistributionAnalytics() {
 // Hook to get level distribution analytics (user-aware and optimized)
 export function useLevelDistributionAnalytics() {
     const { data: currentUser } = useCurrentUser();
-    
+
     // Focus on user's level and nearby levels for more relevant analytics
-    const levelRange = currentUser?.level ? [
-        currentUser.level - 1,
-        currentUser.level,
-        currentUser.level + 1
-    ].filter(level => level > 0 && level <= 5) : [1, 2, 3, 4, 5];
+    const levelRange = currentUser?.level
+        ? [
+              currentUser.level - 1,
+              currentUser.level,
+              currentUser.level + 1,
+          ].filter((level) => level > 0 && level <= 5)
+        : [1, 2, 3, 4, 5];
 
     const { data: coursesResponse } = useCourses({ limit: 100 }); // Still reasonable limit
 

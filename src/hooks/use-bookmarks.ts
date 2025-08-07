@@ -95,8 +95,8 @@ export function useUpdateBookmark() {
         bookmarkKeys.user("current"),
         (old: Bookmark[] | undefined) => {
           if (!old) return old;
-          return old.map(bookmark => 
-            bookmark.id === id ? { ...bookmark, ...data } : bookmark
+          return old.map((bookmark) =>
+              bookmark.id === id ? { ...bookmark, ...data } : bookmark
           );
         }
       );

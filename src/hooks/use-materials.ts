@@ -200,7 +200,7 @@ export function useDeleteMaterial() {
         onMutate: async (materialId) => {
             // Get the material data before deletion for optimistic updates
             const materialToDelete = queryClient.getQueryData<Material2>(materialKeys.detail(materialId));
-            
+
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: materialKeys.lists() });
 
@@ -231,10 +231,10 @@ export function useDeleteMaterial() {
         onSettled: (data, error, materialId, context) => {
             // Always refetch after error or success
             queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
-            
+
             // Remove the individual material from cache
             queryClient.removeQueries({ queryKey: materialKeys.detail(materialId) });
-            
+
             // Invalidate all course material queries (since we can't be sure which course)
             queryClient.invalidateQueries({
                 queryKey: [...materialKeys.all, "course"]

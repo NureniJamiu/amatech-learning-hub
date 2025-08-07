@@ -278,13 +278,17 @@ export function useDeleteCourse() {
         mutationFn: (id: string) => apiClient.delete<void>(`/courses/${id}`),
         onMutate: async (id) => {
             // Get the course data before deletion for optimistic updates
-            const courseToDelete = queryClient.getQueryData<Course>(courseKeys.detail(id));
-            
+            const courseToDelete = queryClient.getQueryData<Course>(
+                courseKeys.detail(id)
+            );
+
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: courseKeys.lists() });
 
             // Snapshot the previous value
-            const previousCourses = queryClient.getQueryData(courseKeys.lists());
+            const previousCourses = queryClient.getQueryData(
+                courseKeys.lists()
+            );
 
             // Optimistically remove the course from all list queries
             queryClient.setQueriesData(
@@ -292,7 +296,9 @@ export function useDeleteCourse() {
                 (old: { courses: Course[]; total: number } | undefined) => {
                     if (!old) return old;
                     return {
-                        courses: old.courses.filter((course) => course.id !== id),
+                        courses: old.courses.filter(
+                            (course) => course.id !== id
+                        ),
                         total: old.total - 1,
                     };
                 }
@@ -305,18 +311,25 @@ export function useDeleteCourse() {
                     (old: { courses: Course[]; total: number } | undefined) => {
                         if (!old) return old;
                         return {
-                            courses: old.courses.filter((course) => course.id !== id),
+                            courses: old.courses.filter(
+                                (course) => course.id !== id
+                            ),
                             total: old.total - 1,
                         };
                     }
                 );
 
                 queryClient.setQueryData(
-                    courseKeys.userLevelSemester(courseToDelete.level, courseToDelete.semester),
+                    courseKeys.userLevelSemester(
+                        courseToDelete.level,
+                        courseToDelete.semester
+                    ),
                     (old: { courses: Course[]; total: number } | undefined) => {
                         if (!old) return old;
                         return {
-                            courses: old.courses.filter((course) => course.id !== id),
+                            courses: old.courses.filter(
+                                (course) => course.id !== id
+                            ),
                             total: old.total - 1,
                         };
                     }
@@ -328,21 +341,33 @@ export function useDeleteCourse() {
         onError: (err, id, context) => {
             // Rollback on error
             if (context?.previousCourses) {
-                queryClient.setQueriesData({ queryKey: courseKeys.lists() }, context.previousCourses);
+                queryClient.setQueriesData(
+                    { queryKey: courseKeys.lists() },
+                    context.previousCourses
+                );
             }
             showApiError(err);
         },
         onSettled: (data, error, id, context) => {
             // Always refetch after error or success
             queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
-            
+
             // Remove the individual course from cache
             queryClient.removeQueries({ queryKey: courseKeys.detail(id) });
-            
+
             // Invalidate level-specific queries if we know the course
             if (context?.courseToDelete) {
-                queryClient.invalidateQueries({ queryKey: courseKeys.userLevel(context.courseToDelete.level) });
-                queryClient.invalidateQueries({ queryKey: courseKeys.userLevelSemester(context.courseToDelete.level, context.courseToDelete.semester) });
+                queryClient.invalidateQueries({
+                    queryKey: courseKeys.userLevel(
+                        context.courseToDelete.level
+                    ),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: courseKeys.userLevelSemester(
+                        context.courseToDelete.level,
+                        context.courseToDelete.semester
+                    ),
+                });
             }
         },
     });
@@ -363,12 +388,22 @@ export function useAssignTutors() {
             apiClient.post<Course>(`/courses/${courseId}/tutors`, { tutorIds }),
         onSuccess: (data, variables) => {
             // Update the specific course in cache
-            queryClient.setQueryData(courseKeys.detail(variables.courseId), data);
-            
+            queryClient.setQueryData(
+                courseKeys.detail(variables.courseId),
+                data
+            );
+
             // Invalidate related queries
             queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
-            queryClient.invalidateQueries({ queryKey: courseKeys.userLevel(data.level) });
-            queryClient.invalidateQueries({ queryKey: courseKeys.userLevelSemester(data.level, data.semester) });
+            queryClient.invalidateQueries({
+                queryKey: courseKeys.userLevel(data.level),
+            });
+            queryClient.invalidateQueries({
+                queryKey: courseKeys.userLevelSemester(
+                    data.level,
+                    data.semester
+                ),
+            });
         },
         onError: (error) => {
             showApiError(error);
