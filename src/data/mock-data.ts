@@ -36,7 +36,8 @@ export const courses: Course[] = [
             {
                 id: "material-1",
                 title: "MTE 301 Course Material 1",
-                fileUrl: "#",
+                fileUrl:
+                    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
                 fileType: "pdf",
             },
             {
@@ -51,7 +52,8 @@ export const courses: Course[] = [
                 id: "pq-1",
                 title: "MTE 301 Past Question 2023",
                 year: 2023,
-                fileUrl: "#",
+                fileUrl:
+                    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
                 fileType: "pdf",
             },
             {

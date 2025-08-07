@@ -79,8 +79,8 @@ export function CourseContent() {
             }
         }
 
-        // For local development, use the local PDF
-        const pdfUrl = LOCAL_PDF_PATH;
+        // Use the actual file URL or fallback to local PDF for development
+        const pdfUrl = fileUrl && fileUrl !== "#" ? fileUrl : LOCAL_PDF_PATH;
 
         // Create a temporary anchor element
         const link = document.createElement("a");
@@ -126,10 +126,16 @@ export function CourseContent() {
             trackMaterialAccess(materialWithCourse);
         }
 
-        // Create a modified item with the local PDF path
+        // Use the actual file URL or fallback to local PDF for development
+        const actualFileUrl =
+            item.fileUrl && item.fileUrl !== "#"
+                ? item.fileUrl
+                : LOCAL_PDF_PATH;
+
+        // Create a modified item with the actual or fallback file URL
         const modifiedItem = {
             ...item,
-            fileUrl: LOCAL_PDF_PATH,
+            fileUrl: actualFileUrl,
         };
         setViewingPdf(modifiedItem);
     };
