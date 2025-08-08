@@ -88,7 +88,11 @@ export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-    const [formData, setFormData] = useState<Omit<MaterialInput, "file">>({
+    const [formData, setFormData] = useState<{
+        title: string;
+        courseId: string;
+        type: string;
+    }>({
         title: "",
         courseId: "",
         type: "material",
@@ -140,25 +144,7 @@ export function ContentManagement() {
         limit: 100, // Increased limit to ensure new courses are included
     });
 
-    // Listen for course creation to refresh the course list
-    useEffect(() => {
-        const handleCourseMutation = () => {
-            // Refetch courses when any course mutation happens
-            refetchCourses();
-        };
-
-        // Set up a listener for course cache invalidation
-        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-            if (
-                event.type === "updated" &&
-                event.query.queryKey[0] === "courses"
-            ) {
-                handleCourseMutation();
-            }
-        });
-
-        return unsubscribe;
-    }, [queryClient, refetchCourses]);
+    // Course updates are handled automatically by React Query invalidation
     const uploadMaterialMutation = useUploadMaterial();
     const deleteMaterialMutation = useDeleteMaterial();
     const uploadPastQuestionMutation = useUploadPastQuestion();
@@ -388,7 +374,7 @@ export function ContentManagement() {
                                             Content Type
                                         </Label>
                                         <Select
-                                            value={formData.type ?? ""}
+                                            value={formData.type || undefined}
                                             onValueChange={(value) =>
                                                 setFormData({
                                                     ...formData,
@@ -425,7 +411,10 @@ export function ContentManagement() {
                                         </Label>
                                         <div className="col-span-3 flex gap-2">
                                             <Select
-                                                value={formData.courseId ?? ""}
+                                                value={
+                                                    formData.courseId ||
+                                                    undefined
+                                                }
                                                 onValueChange={(value) =>
                                                     setFormData({
                                                         ...formData,
@@ -439,14 +428,14 @@ export function ContentManagement() {
                                                 <SelectContent>
                                                     {coursesLoading ? (
                                                         <SelectItem
-                                                            value=""
+                                                            value="loading"
                                                             disabled
                                                         >
                                                             Loading courses...
                                                         </SelectItem>
                                                     ) : coursesError ? (
                                                         <SelectItem
-                                                            value=""
+                                                            value="error"
                                                             disabled
                                                         >
                                                             Error loading
@@ -454,7 +443,7 @@ export function ContentManagement() {
                                                         </SelectItem>
                                                     ) : courses.length === 0 ? (
                                                         <SelectItem
-                                                            value=""
+                                                            value="no-courses"
                                                             disabled
                                                         >
                                                             No courses available
