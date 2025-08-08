@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { parsePdfBuffer } from "./pdf-parser";
+import { PDFUtils } from "./pdf-utils";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -27,33 +28,45 @@ export class PDFProcessingService {
     private static readonly CHUNK_OVERLAP = 200; // Overlap between chunks
 
     /**
-     * Process PDF from URL and extract text chunks
+     * Process PDF from URL and extract text chunks with enhanced error handling
      */
     static async processPDF(fileUrl: string): Promise<ProcessingResult> {
         try {
             console.log("Processing PDF:", fileUrl);
 
-            // Fetch PDF from Cloudinary first
-            const response = await fetch(fileUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+            // Step 1: Validate PDF URL and accessibility
+            console.log("Validating PDF URL...");
+            const validation = await PDFUtils.validatePdfUrl(fileUrl);
+            if (!validation.isValid) {
+                throw new Error(`PDF validation failed: ${validation.error}`);
             }
-
-            const buffer = await response.arrayBuffer();
-
-            // Extract text from PDF using our wrapper
-            const data = await parsePdfBuffer(Buffer.from(buffer));
-            const fullText = data.text;
-
-            if (!fullText || fullText.trim().length === 0) {
-                throw new Error("No text content found in PDF");
-            }
-
-            // Split text into chunks
-            const chunks = this.chunkText(fullText);
 
             console.log(
-                `Successfully processed PDF: ${chunks.length} chunks created`
+                `PDF validation passed: ${validation.fileSize} bytes, type: ${validation.contentType}`
+            );
+
+            // Step 2: Download PDF with retries
+            console.log("Downloading PDF...");
+            const buffer = await PDFUtils.downloadPdfWithRetries(fileUrl, 3);
+
+            // Step 3: Parse PDF with enhanced error handling
+            console.log("Parsing PDF content...");
+            const data = await PDFUtils.parseWithFallbacks(buffer);
+
+            // Step 4: Clean and validate extracted text
+            console.log("Cleaning and validating text...");
+            const cleanedText = PDFUtils.cleanAndValidateText(data.text);
+
+            console.log(
+                `Text processing completed: ${cleanedText.length} characters from ${data.numpages} pages`
+            );
+
+            // Step 5: Split text into chunks
+            console.log("Creating text chunks...");
+            const chunks = this.chunkText(cleanedText);
+
+            console.log(
+                `Successfully processed PDF: ${chunks.length} chunks created from ${data.numpages} pages`
             );
 
             return {
@@ -63,61 +76,120 @@ export class PDFProcessingService {
             };
         } catch (error) {
             console.error("PDF processing failed:", error);
+
+            // Provide more specific error messages
+            let errorMessage = "Unknown error occurred during PDF processing";
+
+            if (error instanceof Error) {
+                if (error.name === "AbortError") {
+                    errorMessage =
+                        "PDF download timed out - file may be too large or server unresponsive";
+                } else if (error.message.includes("validation failed")) {
+                    errorMessage = `PDF validation error: ${error.message}`;
+                } else if (error.message.includes("download")) {
+                    errorMessage = `PDF download failed: ${error.message}`;
+                } else if (error.message.includes("parsing failed")) {
+                    errorMessage = `PDF parsing error: ${error.message}`;
+                } else if (error.message.includes("text")) {
+                    errorMessage = `Text extraction error: ${error.message}`;
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+
             return {
                 chunks: [],
                 totalChunks: 0,
                 success: false,
-                error: error instanceof Error ? error.message : "Unknown error",
+                error: errorMessage,
             };
         }
     }
 
     /**
-     * Split text into overlapping chunks
+     * Split text into overlapping chunks with improved algorithm
      */
     private static chunkText(text: string): ProcessedChunk[] {
         const chunks: ProcessedChunk[] = [];
-        const sentences = text
+
+        // Clean up the text first
+        const cleanedText = text
+            .replace(/\s+/g, " ") // Replace multiple whitespace with single space
+            .replace(/\n+/g, "\n") // Replace multiple newlines with single newline
+            .trim();
+
+        // Split by sentences first, then paragraphs if sentences are too long
+        let sentences = cleanedText
             .split(/[.!?]+/)
-            .filter((s) => s.trim().length > 0);
+            .filter((s) => s.trim().length > 10) // Filter out very short fragments
+            .map((s) => s.trim() + ".");
+
+        // If sentences are too long, split by commas or semicolons
+        const expandedSentences: string[] = [];
+        for (const sentence of sentences) {
+            if (sentence.length > this.CHUNK_SIZE * 0.8) {
+                const parts = sentence
+                    .split(/[,;]+/)
+                    .filter((p) => p.trim().length > 5);
+                if (parts.length > 1) {
+                    expandedSentences.push(...parts.map((p) => p.trim()));
+                } else {
+                    expandedSentences.push(sentence);
+                }
+            } else {
+                expandedSentences.push(sentence);
+            }
+        }
 
         let currentChunk = "";
         let chunkIndex = 0;
-        let currentSize = 0;
 
-        for (const sentence of sentences) {
-            const sentenceWithPunctuation = sentence.trim() + ".";
+        for (const sentence of expandedSentences) {
+            const sentenceToAdd = sentence.endsWith(".")
+                ? sentence
+                : sentence + ".";
 
-            // If adding this sentence would exceed chunk size, start a new chunk
+            // Check if adding this sentence would exceed chunk size
             if (
-                currentSize + sentenceWithPunctuation.length >
+                currentChunk.length + sentenceToAdd.length + 1 >
                     this.CHUNK_SIZE &&
                 currentChunk.length > 0
             ) {
-                chunks.push({
-                    content: currentChunk.trim(),
-                    chunkIndex,
-                });
+                // Save current chunk
+                if (currentChunk.trim().length > 50) {
+                    // Only save chunks with meaningful content
+                    chunks.push({
+                        content: currentChunk.trim(),
+                        chunkIndex,
+                    });
+                    chunkIndex++;
+                }
 
                 // Start new chunk with overlap
                 const words = currentChunk.split(" ");
-                const overlapWords = words.slice(
-                    -Math.floor(this.CHUNK_OVERLAP / 6)
-                ); // Approximate overlap
-                currentChunk = overlapWords.join(" ") + " ";
-                currentSize = currentChunk.length;
-                chunkIndex++;
+                const overlapWords = Math.min(
+                    Math.floor(this.CHUNK_OVERLAP / 6),
+                    words.length
+                );
+                currentChunk = words.slice(-overlapWords).join(" ") + " ";
             }
 
-            currentChunk += sentenceWithPunctuation + " ";
-            currentSize += sentenceWithPunctuation.length + 1;
+            currentChunk += sentenceToAdd + " ";
         }
 
-        // Add final chunk if it has content
-        if (currentChunk.trim().length > 0) {
+        // Add final chunk if it has meaningful content
+        if (currentChunk.trim().length > 50) {
             chunks.push({
                 content: currentChunk.trim(),
                 chunkIndex,
+            });
+        }
+
+        // Ensure we have at least one chunk even if the text is short
+        if (chunks.length === 0 && cleanedText.length > 0) {
+            chunks.push({
+                content: cleanedText,
+                chunkIndex: 0,
             });
         }
 
