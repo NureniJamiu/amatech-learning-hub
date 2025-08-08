@@ -3,7 +3,6 @@
 import {
   FileText,
   Settings,
-  Users,
   BookOpen,
   BarChart3,
   Shield,
@@ -25,7 +24,6 @@ export function AdminSidebar() {
     const { state } = useSidebar();
 
     const adminMenuItems = [
-        { id: "users", title: "User Management", icon: Users },
         { id: "courses", title: "Course Management", icon: BookOpen },
         { id: "tutors", title: "Tutor Management", icon: UserCog },
         { id: "content", title: "Content Management", icon: FileText },

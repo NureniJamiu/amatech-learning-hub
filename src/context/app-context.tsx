@@ -35,7 +35,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const [currentView, setCurrentView] = useState<AppView>("dashboard");
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [isAdminMode, setIsAdminMode] = useState(false);
-    const [activeAdminSection, setActiveAdminSection] = useState("users");
+    const [activeAdminSection, setActiveAdminSection] = useState("courses");
 
     // Get current user from authentication
     const { data: currentUser, isLoading: userLoading } = useCurrentUser();

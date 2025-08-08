@@ -1,7 +1,6 @@
 "use client";
 
 import { useAppContext } from "@/context/app-context";
-import { UserManagement } from "@/components/admin/user-management";
 import { CourseManagement } from "@/components/admin/course-management";
 import { ContentManagement } from "@/components/admin/content-management";
 import { Analytics } from "@/components/admin/analytics";
@@ -15,7 +14,6 @@ export function AdminContent() {
 
   return (
     <div className="space-y-6">
-      {activeAdminSection === "users" && <UserManagement />}
       {activeAdminSection === "courses" && <CourseManagement />}
       {/* {activeAdminSection === "courses" && <CourseCacheTest />} */}
       {activeAdminSection === "content" && <ContentManagement />}
