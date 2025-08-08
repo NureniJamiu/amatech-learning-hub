@@ -29,6 +29,7 @@ model User {
   pastQuestions    PastQuestion[]
   sessions         Session[]
   timetableEntries TimetableEntry[]
+  chatSessions     ChatSession[]    // Add relation to chat sessions
 
   @@map("users")
 }
@@ -59,6 +60,7 @@ model Course {
   materials        Material[]
   pastQuestions    PastQuestion[]
   timetableEntries TimetableEntry[]
+  chatSessions     ChatSession[]    // Add relation to chat sessions
 
   @@map("courses")
 }
@@ -76,17 +78,67 @@ model CourseToTutor {
 }
 
 model Material {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
   title        String
   fileUrl      String
   courseId     String
   uploadedById String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  processed    Boolean         @default(false) // Track if PDF has been processed for RAG
+  processingStatus String      @default("pending") // pending, processing, completed, failed
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  course       Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy   User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  chunks       MaterialChunk[] // Add relation to chunks
 
   @@map("materials")
+}
+
+model MaterialChunk {
+  id           String   @id @default(cuid())
+  materialId   String
+  content      String   @db.Text // The actual text chunk
+  embedding    Float[]  // Vector embedding (stored as array)
+  chunkIndex   Int      // Order in the document
+  pageNumber   Int?     // Page number in the PDF
+  metadata     Json?    // Additional metadata (headers, formatting, etc.)
+  createdAt    DateTime @default(now())
+  material     Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([materialId])
+  @@index([chunkIndex])
+  @@map("material_chunks")
+}
+
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String
+  courseId  String?
+  title     String?       // Optional session title
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  sessionId   String
+  content     String      @db.Text
+  role        String      // "user" or "assistant"
+  sources     String[]    // References to material chunks used (chunk IDs)
+  metadata    Json?       // Additional metadata (confidence scores, etc.)
+  createdAt   DateTime    @default(now())
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([role])
+  @@map("chat_messages")
 }
 
 model PastQuestion {

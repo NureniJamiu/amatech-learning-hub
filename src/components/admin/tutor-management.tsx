@@ -156,9 +156,15 @@ export function TutorManagement() {
         setIsCreateDialogOpen(true);
     };
 
-    // Handle file upload complete
-    const handleFileUploadComplete = (url: string) => {
-        setFormData((prev) => ({ ...prev, avatar: url }));
+    // Handle file upload complete - for backward compatibility with image uploads
+    const handleFileUploadComplete = (fileOrUrl: File | string) => {
+        if (typeof fileOrUrl === "string") {
+            // URL received (autoUpload = true case)
+            setFormData((prev) => ({ ...prev, avatar: fileOrUrl }));
+        } else {
+            // File received (autoUpload = false case) - not used for tutors
+            console.log("File selected but not uploaded:", fileOrUrl?.name);
+        }
     };
 
     // Reset form when dialog closes
@@ -258,6 +264,7 @@ export function TutorManagement() {
                                                 handleFileUploadComplete
                                             }
                                             initialImageUrl={formData.avatar}
+                                            autoUpload={true}
                                         />
                                     </div>
                                 </div>

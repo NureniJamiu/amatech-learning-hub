@@ -1,26 +1,30 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { CircleUserRoundIcon, FileTextIcon } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { CircleUserRoundIcon, FileTextIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useFileUpload from "@/hooks/useFileUpload";
 
 interface FileUploaderProps {
     uploadPreset: string;
     folder?: string;
-    onUploadComplete?: (url: string) => void;
+    onUploadComplete?: (file: File | string) => void; // Support both File and URL for backward compatibility
+    onUploadError?: (error: string) => void;
     initialImageUrl?: string;
     className?: string;
     accept?: string;
+    autoUpload?: boolean; // New prop to control when upload happens
 }
 
 export default function FileUploader({
     uploadPreset,
     folder,
     onUploadComplete,
+    onUploadError,
     initialImageUrl = "",
     className = "",
     accept = "image/*",
+    autoUpload = false, // Default to false for transactional uploads
 }: FileUploaderProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>(initialImageUrl);
@@ -33,7 +37,13 @@ export default function FileUploader({
             defaultFolder: folder,
             onSuccess: (url) => {
                 setPreviewUrl(url);
-                onUploadComplete?.(url);
+                // For auto uploads, pass the URL (backward compatibility)
+                if (autoUpload && onUploadComplete) {
+                    onUploadComplete(url);
+                }
+            },
+            onError: (error) => {
+                onUploadError?.(error.message);
             },
         });
 
@@ -54,15 +64,44 @@ export default function FileUploader({
             setPreviewUrl("");
         }
 
+        // Only auto-upload if autoUpload is true (for backward compatibility)
+        if (autoUpload) {
+            try {
+                const url = await uploadFile(
+                    file,
+                    uploadPreset,
+                    folder ? { folder } : {}
+                );
+                if (url) setPreviewUrl(url);
+            } catch (err) {
+                console.error("Upload failed", err);
+                onUploadError?.(
+                    err instanceof Error ? err.message : "Upload failed"
+                );
+            }
+        } else {
+            // For transactional uploads, just call onUploadComplete with the file
+            onUploadComplete?.(file);
+        }
+    };
+
+    // Method to manually trigger upload (for transactional pattern)
+    const triggerUpload = async (): Promise<string | null> => {
+        if (!selectedFile) return null;
+
         try {
             const url = await uploadFile(
-                file,
+                selectedFile,
                 uploadPreset,
                 folder ? { folder } : {}
             );
-            if (url) setPreviewUrl(url);
+            return url;
         } catch (err) {
             console.error("Upload failed", err);
+            onUploadError?.(
+                err instanceof Error ? err.message : "Upload failed"
+            );
+            return null;
         }
     };
 
@@ -76,59 +115,15 @@ export default function FileUploader({
         reset();
         setPreviewUrl("");
         setSelectedFile(null);
+        // Reset parent component's file state
+        onUploadComplete?.(null as any);
     };
 
     const fileName = selectedFile?.name;
     const isImage = selectedFile?.type.startsWith("image/");
 
-    // Handle form submission for creating/updating courses
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!formData.code.trim() || !formData.title.trim()) {
-            //   toast({
-            //     title: "Validation Error",
-            //     description: "Course code and title are required",
-            //     variant: "destructive",
-            //   });
-            return;
-        }
-
-        try {
-            if (editingCourse) {
-                await updateCourseMutation.mutateAsync({
-                    id: editingCourse,
-                    data: formData,
-                });
-                // toast({
-                //   title: "Success",
-                //   description: "Course updated successfully",
-                // });
-            } else {
-                await createCourseMutation.mutateAsync(formData);
-                // toast({
-                //   title: "Success",
-                //   description: "Course created successfully",
-                // });
-            }
-
-            // Reset form and close dialog
-            setFormData({
-                code: "",
-                title: "",
-                units: 2,
-                level: 100,
-                semester: 1,
-                description: "",
-                tutorIds: [],
-            });
-            setIsCreateDialogOpen(false);
-            setEditingCourse(null);
-            queryClient.invalidateQueries({ queryKey: ["courses"] });
-        } catch (error) {
-            // Error is handled by the mutation's onError
-        }
-    };
+    // Note: We removed the useImperativeHandle as it was causing type conflicts
+    // The triggerUpload method can be accessed directly from the hook if needed
 
     return (
         <div className={`flex flex-col items-center ${className}`}>
@@ -226,7 +221,13 @@ export default function FileUploader({
                 </p>
             )}
 
-            {status === "success" && (
+            {status === "success" && !autoUpload && (
+                <p className="text-xs text-green-600 mt-1">
+                    File ready for upload!
+                </p>
+            )}
+
+            {status === "success" && autoUpload && (
                 <p className="text-xs text-green-600 mt-1">
                     Upload successful!
                 </p>

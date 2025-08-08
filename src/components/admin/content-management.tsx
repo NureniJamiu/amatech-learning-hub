@@ -69,6 +69,7 @@ import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
 import type { Material2 } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTransactionalUpload } from "@/hooks/use-transactional-upload";
 
 // Import your hooks
 import {
@@ -87,11 +88,19 @@ export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-    const [formData, setFormData] = useState<MaterialInput>({
+    const [formData, setFormData] = useState<Omit<MaterialInput, "file">>({
         title: "",
         courseId: "",
-        file: null,
         type: "material",
+    });
+
+    // Transactional upload state
+    const materialUpload = useTransactionalUpload({
+        uploadPreset: "amatech-materials-and-pqs",
+        folder: "materials",
+        onError: (error) => {
+            console.error("Upload error:", error);
+        },
     });
 
     const { trackMaterialAccess, trackPastQuestionAccess } =
@@ -187,7 +196,7 @@ export function ContentManagement() {
             return;
         }
 
-        if (!formData.file) {
+        if (!materialUpload.selectedFile) {
             //   toast({
             //     title: "Validation Error",
             //     description: "File is required",
@@ -197,14 +206,47 @@ export function ContentManagement() {
         }
 
         try {
+            // Step 1: Upload file to Cloudinary (transactional)
+            const fileUrl = await materialUpload.executeUpload();
+
+            if (!fileUrl) {
+                throw new Error("File upload failed");
+            }
+
+            // Step 2: Save to database with uploaded file URL
+            const materialData: MaterialInput = {
+                ...formData,
+                file: fileUrl,
+            };
+
             if (formData.type === "material") {
-                await uploadMaterialMutation.mutateAsync(formData);
+                const result = await uploadMaterialMutation.mutateAsync(
+                    materialData
+                );
+
+                // Automatically process the material for RAG
+                if (result && result.id) {
+                    try {
+                        await fetch("/api/v1/materials/process", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ materialId: result.id }),
+                        });
+                        console.log("Material processing started for RAG");
+                    } catch (processingError) {
+                        console.warn(
+                            "Material uploaded but RAG processing failed:",
+                            processingError
+                        );
+                    }
+                }
+
                 // toast({
                 //   title: "Success",
                 //   description: "Material uploaded successfully",
                 // });
             } else {
-                await uploadPastQuestionMutation.mutateAsync(formData);
+                await uploadPastQuestionMutation.mutateAsync(materialData);
                 // toast({
                 //   title: "Success",
                 //   description: "Past question uploaded successfully",
@@ -215,9 +257,9 @@ export function ContentManagement() {
             setFormData({
                 title: "",
                 courseId: "",
-                file: null,
                 type: "material",
             });
+            materialUpload.reset();
             setIsUploadDialogOpen(false);
 
             // Refresh courses to ensure material counts are updated
@@ -225,7 +267,11 @@ export function ContentManagement() {
 
             // Query invalidation for materials is now handled by the mutation hooks
         } catch (error) {
-            // Error is handled by the mutation's onError
+            // Error handling: If database save fails, we should clean up the uploaded file
+            if (materialUpload.uploadedUrl) {
+                await materialUpload.cleanupUpload(materialUpload.uploadedUrl);
+                console.log("Cleaned up uploaded file due to database error");
+            }
             console.log("Error uploading content:", error);
         }
     };
@@ -264,8 +310,13 @@ export function ContentManagement() {
         }
     };
 
-    const handleFileUploadComplete = (url: string) => {
-        setFormData((prev) => ({ ...prev, file: url }));
+    const handleFileUploadComplete = (file: File | string) => {
+        if (file instanceof File) {
+            materialUpload.setSelectedFile(file);
+        } else {
+            // Handle string URL case (shouldn't happen with autoUpload=false, but for safety)
+            console.warn("Received URL instead of File object:", file);
+        }
     };
 
     // Handle opening the upload dialog - refetch courses to ensure latest data
@@ -481,7 +532,17 @@ export function ContentManagement() {
                                                 onUploadComplete={
                                                     handleFileUploadComplete
                                                 }
+                                                autoUpload={false}
                                             />
+                                            {materialUpload.selectedFile && (
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Selected:{" "}
+                                                    {
+                                                        materialUpload
+                                                            .selectedFile.name
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -490,16 +551,20 @@ export function ContentManagement() {
                                         type="submit"
                                         disabled={
                                             uploadMaterialMutation.isPending ||
-                                            uploadPastQuestionMutation.isPending
+                                            uploadPastQuestionMutation.isPending ||
+                                            materialUpload.isUploading ||
+                                            !materialUpload.canProceed
                                         }
                                     >
-                                        {uploadMaterialMutation.isPending ||
-                                            (uploadPastQuestionMutation.isPending && (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            ))}
+                                        {(uploadMaterialMutation.isPending ||
+                                            uploadPastQuestionMutation.isPending ||
+                                            materialUpload.isUploading) && (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        )}
 
                                         {uploadMaterialMutation.isPending ||
-                                        uploadPastQuestionMutation.isPending
+                                        uploadPastQuestionMutation.isPending ||
+                                        materialUpload.isUploading
                                             ? "Uploading..."
                                             : "Upload"}
                                     </Button>
