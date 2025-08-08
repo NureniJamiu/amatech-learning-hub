@@ -198,7 +198,7 @@ export default function FileUploader({
                     <button
                         type="button"
                         onClick={handleRemove}
-                        className="text-destructive font-medium hover:underline"
+                        className="cursor-pointer text-destructive font-medium hover:underline"
                         aria-label={`Remove ${fileName}`}
                     >
                         Remove

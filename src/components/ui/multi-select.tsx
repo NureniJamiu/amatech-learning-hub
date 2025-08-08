@@ -91,7 +91,7 @@ export function MultiSelect({
                 {label}
                 <button
                   type="button"
-                  className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className="cursor-pointer rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -212,7 +212,7 @@ export const MultiSelectValue = React.forwardRef<
             {optionData.label}
             <button
               type="button"
-              className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="cursor-pointer rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

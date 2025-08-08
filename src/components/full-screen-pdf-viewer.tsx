@@ -37,7 +37,7 @@ export function FullScreenPDFViewer({ fileUrl, title, open, onClose }: FullScree
       {/* Header */}
       <div className="flex items-center justify-between bg-background p-4 shadow-md">
         <h2 className="text-xl font-semibold truncate flex-1">{title}</h2>
-        <button onClick={onClose} className="rounded-full p-2 hover:bg-gray-200 transition-colors" aria-label="Close">
+        <button onClick={onClose} className="cursor-pointer rounded-full p-2 hover:bg-gray-200 transition-colors" aria-label="Close">
           <X className="h-6 w-6" />
         </button>
       </div>

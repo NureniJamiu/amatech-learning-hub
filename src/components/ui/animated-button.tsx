@@ -25,7 +25,7 @@ const AnimatedButton = React.forwardRef<HTMLButtonElement, AnimatedButtonProps>(
             onClick={onClick}
             className={cn(
                 buttonVariants({ variant, size }),
-                "relative overflow-hidden w-auto border-2 border-transparent",
+                "cursor-pointer relative overflow-hidden w-auto border-2 border-transparent disabled:cursor-not-allowed",
                 className
             )}
             whileHover={{
