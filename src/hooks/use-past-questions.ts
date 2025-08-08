@@ -215,6 +215,12 @@ export function useDeletePastQuestion() {
 
             return { previousPastQuestions };
         },
+        onSuccess: (data, pastQuestionId, context) => {
+            // On successful deletion, ensure the item is properly removed from cache
+            queryClient.removeQueries({
+                queryKey: pastQuestionKeys.detail(pastQuestionId),
+            });
+        },
         onError: (err, pastQuestionId, context) => {
             // Rollback on error
             if (context?.previousPastQuestions) {
@@ -226,13 +232,13 @@ export function useDeletePastQuestion() {
             showApiError(err);
         },
         onSettled: (data, error, pastQuestionId) => {
-            // Always refetch after error or success
+            // Always refetch after error or success to ensure consistency
             queryClient.invalidateQueries({
                 queryKey: pastQuestionKeys.lists(),
             });
-            // Remove the individual past question from cache
-            queryClient.removeQueries({
-                queryKey: pastQuestionKeys.detail(pastQuestionId),
+            // Invalidate course queries to update past question counts
+            queryClient.invalidateQueries({
+                queryKey: ["courses"],
             });
         },
     });

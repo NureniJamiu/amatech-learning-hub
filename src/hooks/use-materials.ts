@@ -232,24 +232,33 @@ export function useDeleteMaterial() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => apiClient.delete<Material2>(`/materials/${id}`),
+        mutationFn: (id: string) =>
+            apiClient.delete<Material2>(`/materials/${id}`),
         onMutate: async (materialId) => {
             // Get the material data before deletion for optimistic updates
-            const materialToDelete = queryClient.getQueryData<Material2>(materialKeys.detail(materialId));
+            const materialToDelete = queryClient.getQueryData<Material2>(
+                materialKeys.detail(materialId)
+            );
 
             // Cancel any outgoing refetches
             await queryClient.cancelQueries({ queryKey: materialKeys.lists() });
 
             // Snapshot the previous values
-            const previousMaterials = queryClient.getQueryData(materialKeys.lists());
+            const previousMaterials = queryClient.getQueryData(
+                materialKeys.lists()
+            );
 
             // Optimistically remove the material from all list queries
             queryClient.setQueriesData(
                 { queryKey: materialKeys.lists() },
-                (old: { materials: Material2[]; total: number } | undefined) => {
+                (
+                    old: { materials: Material2[]; total: number } | undefined
+                ) => {
                     if (!old) return old;
                     return {
-                        materials: old.materials.filter(material => material.id !== materialId),
+                        materials: old.materials.filter(
+                            (material) => material.id !== materialId
+                        ),
                         total: old.total - 1,
                     };
                 }
@@ -257,23 +266,29 @@ export function useDeleteMaterial() {
 
             return { previousMaterials, materialToDelete };
         },
+        onSuccess: (data, materialId, context) => {
+            // On successful deletion, ensure the item is properly removed from cache
+            queryClient.removeQueries({
+                queryKey: materialKeys.detail(materialId),
+            });
+        },
         onError: (err, materialId, context) => {
             // Rollback on error
             if (context?.previousMaterials) {
-                queryClient.setQueriesData({ queryKey: materialKeys.lists() }, context.previousMaterials);
+                queryClient.setQueriesData(
+                    { queryKey: materialKeys.lists() },
+                    context.previousMaterials
+                );
             }
             showApiError(err);
         },
         onSettled: (data, error, materialId, context) => {
-            // Always refetch after error or success
+            // Always refetch after error or success to ensure consistency
             queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
 
-            // Remove the individual material from cache
-            queryClient.removeQueries({ queryKey: materialKeys.detail(materialId) });
-
-            // Invalidate all course material queries (since we can't be sure which course)
+            // Invalidate course queries to update material counts
             queryClient.invalidateQueries({
-                queryKey: [...materialKeys.all, "course"]
+                queryKey: ["courses"],
             });
         },
     });

@@ -9,6 +9,7 @@ import {
     Search,
     Trash2,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +89,9 @@ export function ContentManagement() {
     const [activeTab, setActiveTab] = useState("materials");
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [openDeleteDialogs, setOpenDeleteDialogs] = useState<Set<string>>(
+        new Set()
+    );
     const [formData, setFormData] = useState<{
         title: string;
         courseId: string;
@@ -156,6 +160,23 @@ export function ContentManagement() {
     const totalPastQuestions = pastQuestionsResponse?.total || 0;
     const courses = coursesResponse?.courses || [];
 
+    // Helper functions for managing delete dialog state
+    const openDeleteDialog = (id: string) => {
+        setOpenDeleteDialogs((prev) => new Set(prev).add(id));
+    };
+
+    const closeDeleteDialog = (id: string) => {
+        setOpenDeleteDialogs((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+        });
+    };
+
+    const isDeleteDialogOpen = (id: string) => {
+        return openDeleteDialogs.has(id);
+    };
+
     // Handle form submission for creating/updating content
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -165,29 +186,26 @@ export function ContentManagement() {
         }
 
         if (!formData.title.trim()) {
-            //   toast({
-            //     title: "Validation Error",
-            //     description: "Title is required",
-            //     variant: "destructive",
-            //   });
+            toast.error("Title is required", {
+                position: "top-right",
+                autoClose: 3000,
+            });
             return;
         }
 
         if (!formData.courseId) {
-            //   toast({
-            //     title: "Validation Error",
-            //     description: "Course is required",
-            //     variant: "destructive",
-            //   });
+            toast.error("Course is required", {
+                position: "top-right",
+                autoClose: 3000,
+            });
             return;
         }
 
         if (!materialUpload.selectedFile) {
-            //   toast({
-            //     title: "Validation Error",
-            //     description: "File is required",
-            //     variant: "destructive",
-            //   });
+            toast.error("File is required", {
+                position: "top-right",
+                autoClose: 3000,
+            });
             return;
         }
 
@@ -227,16 +245,16 @@ export function ContentManagement() {
                     }
                 }
 
-                // toast({
-                //   title: "Success",
-                //   description: "Material uploaded successfully",
-                // });
+                toast.success("Material uploaded successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
             } else {
                 await uploadPastQuestionMutation.mutateAsync(materialData);
-                // toast({
-                //   title: "Success",
-                //   description: "Past question uploaded successfully",
-                // });
+                toast.success("Past question uploaded successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
             }
 
             // Reset form and close dialog
@@ -269,13 +287,16 @@ export function ContentManagement() {
     ) => {
         try {
             await deleteMaterialMutation.mutateAsync(materialId);
-            // toast({
-            //   title: "Success",
-            //   description: `${materialTitle} deleted successfully`,
-            // });
+            toast.success(`${materialTitle} deleted successfully`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            // Close the delete dialog
+            closeDeleteDialog(materialId);
             // Query invalidation is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
+            // Keep dialog open on error so user can retry
         }
     };
 
@@ -286,13 +307,16 @@ export function ContentManagement() {
     ) => {
         try {
             await deletePastQuestionMutation.mutateAsync(questionId);
-            // toast({
-            //   title: "Success",
-            //   description: `${questionTitle} deleted successfully`,
-            // });
+            toast.success(`${questionTitle} deleted successfully`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            // Close the delete dialog
+            closeDeleteDialog(questionId);
             // Query invalidation is now handled by the mutation hooks
         } catch (error) {
             // Error is handled by the mutation's onError
+            // Keep dialog open on error so user can retry
         }
     };
 
@@ -686,7 +710,26 @@ export function ContentManagement() {
                                                                         View
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuSeparator />
-                                                                    <AlertDialog>
+                                                                    <AlertDialog
+                                                                        open={isDeleteDialogOpen(
+                                                                            material.id
+                                                                        )}
+                                                                        onOpenChange={(
+                                                                            open
+                                                                        ) => {
+                                                                            if (
+                                                                                open
+                                                                            ) {
+                                                                                openDeleteDialog(
+                                                                                    material.id
+                                                                                );
+                                                                            } else {
+                                                                                closeDeleteDialog(
+                                                                                    material.id
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    >
                                                                         <AlertDialogTrigger
                                                                             asChild
                                                                         >
@@ -883,7 +926,26 @@ export function ContentManagement() {
                                                                             View
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuSeparator />
-                                                                        <AlertDialog>
+                                                                        <AlertDialog
+                                                                            open={isDeleteDialogOpen(
+                                                                                question.id
+                                                                            )}
+                                                                            onOpenChange={(
+                                                                                open
+                                                                            ) => {
+                                                                                if (
+                                                                                    open
+                                                                                ) {
+                                                                                    openDeleteDialog(
+                                                                                        question.id
+                                                                                    );
+                                                                                } else {
+                                                                                    closeDeleteDialog(
+                                                                                        question.id
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
                                                                             <AlertDialogTrigger
                                                                                 asChild
                                                                             >
