@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
-import { PDFProcessingService } from '@/lib/pdf-processing';
+import { ragPipeline } from "@/lib/rag-pipeline";
 
 const prisma = new PrismaClient();
 
@@ -8,103 +8,89 @@ const prisma = new PrismaClient();
  * Process a material for RAG by extracting text and generating embeddings
  */
 export async function POST(req: Request) {
-  try {
-    const { materialId } = await req.json();
-
-    if (!materialId) {
-      return NextResponse.json(
-        { success: false, error: 'Material ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get material details
-    const material = await prisma.material.findUnique({
-      where: { id: materialId },
-      include: {
-        course: {
-          select: { code: true, title: true },
-        },
-      },
-    });
-
-    if (!material) {
-      return NextResponse.json(
-        { success: false, error: 'Material not found' },
-        { status: 404 }
-      );
-    }
-
-    // Update processing status
-    await prisma.material.update({
-      where: { id: materialId },
-      data: { processingStatus: 'processing' },
-    });
-
     try {
-      // Process PDF
-      const processingResult = await PDFProcessingService.processPDF(material.fileUrl);
+        const { materialId } = await req.json();
 
-      if (!processingResult.success) {
-        throw new Error(processingResult.error || 'PDF processing failed');
-      }
+        if (!materialId) {
+            return NextResponse.json(
+                { success: false, error: "Material ID is required" },
+                { status: 400 }
+            );
+        }
 
-      // Generate embeddings
-      const embeddingResult = await PDFProcessingService.generateEmbeddings(
-        processingResult.chunks
-      );
+        // Get material details
+        const material = await prisma.material.findUnique({
+            where: { id: materialId },
+            include: {
+                course: {
+                    select: { id: true, code: true, title: true },
+                },
+            },
+        });
 
-      if (!embeddingResult.success) {
-        throw new Error(embeddingResult.error || 'Embedding generation failed');
-      }
+        if (!material) {
+            return NextResponse.json(
+                { success: false, error: "Material not found" },
+                { status: 404 }
+            );
+        }
 
-      // Save chunks to database
-      const chunkData = processingResult.chunks.map((chunk, index) => ({
-        materialId,
-        content: chunk.content,
-        embedding: embeddingResult.embeddings[index],
-        chunkIndex: chunk.chunkIndex,
-        pageNumber: chunk.pageNumber,
-        metadata: chunk.metadata,
-      }));
+        // Update processing status
+        await prisma.material.update({
+            where: { id: materialId },
+            data: { processingStatus: "processing" },
+        });
 
-      await prisma.materialChunk.createMany({
-        data: chunkData,
-      });
+        // Process PDF using enhanced RAG pipeline
+        const result = await ragPipeline.processPDFForRAG(
+            material.fileUrl,
+            material.id,
+            material.title,
+            material.course.id
+        );
 
-      // Update material status
-      await prisma.material.update({
-        where: { id: materialId },
-        data: {
-          processed: true,
-          processingStatus: 'completed',
-        },
-      });
+        if (!result.success) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: result.error || "PDF processing failed",
+                },
+                { status: 500 }
+            );
+        }
 
-      return NextResponse.json({
-        success: true,
-        message: 'Material processed successfully',
-        chunksCreated: processingResult.totalChunks,
-      });
+        return NextResponse.json({
+            success: true,
+            message: "Material processed successfully",
+            chunksCreated: result.chunksCreated,
+        });
     } catch (error) {
-      // Update status to failed
-      await prisma.material.update({
-        where: { id: materialId },
-        data: { processingStatus: 'failed' },
-      });
+        console.error("Material processing error:", error);
 
-      throw error;
+        // Update status to failed if we have materialId
+        try {
+            const { materialId } = await req.json();
+            if (materialId) {
+                await prisma.material.update({
+                    where: { id: materialId },
+                    data: { processingStatus: "failed" },
+                });
+            }
+        } catch (updateError) {
+            console.error("Failed to update material status:", updateError);
+        }
+
+        return NextResponse.json(
+            {
+                success: false,
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Processing failed",
+            },
+            { status: 500 }
+        );
     }
-  } catch (error) {
-    console.error('Material processing error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Processing failed',
-      },
-      { status: 500 }
-    );
-  }
 }
 
 /**

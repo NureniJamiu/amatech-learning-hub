@@ -1,92 +1,124 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
-import { RAGService } from '@/lib/rag-service';
+import { ragPipeline, ChatHistory } from "@/lib/rag-pipeline";
 
 const prisma = new PrismaClient();
 
 /**
- * Process AI chat query using RAG
+ * Process AI chat query using enhanced RAG pipeline
  */
 export async function POST(req: Request) {
-  try {
-    const { message, courseId, sessionId, userId } = await req.json();
+    try {
+        const { message, courseId, sessionId, userId } = await req.json();
 
-    if (!message || !userId) {
-      return NextResponse.json(
-        { success: false, error: 'Message and user ID are required' },
-        { status: 400 }
-      );
+        if (!message || !userId) {
+            return NextResponse.json(
+                { success: false, error: "Message and user ID are required" },
+                { status: 400 }
+            );
+        }
+
+        // Get or create chat session
+        let session;
+        if (sessionId) {
+            session = await prisma.chatSession.findUnique({
+                where: { id: sessionId },
+            });
+        }
+
+        if (!session) {
+            session = await prisma.chatSession.create({
+                data: {
+                    userId,
+                    courseId: courseId || null,
+                    title:
+                        message.substring(0, 50) +
+                        (message.length > 50 ? "..." : ""),
+                },
+            });
+        }
+
+        // Save user message
+        await prisma.chatMessage.create({
+            data: {
+                sessionId: session.id,
+                content: message,
+                role: "user",
+                sources: [],
+            },
+        });
+
+        // Get recent chat history for context
+        const recentMessages = await prisma.chatMessage.findMany({
+            where: { sessionId: session.id },
+            orderBy: { createdAt: "desc" },
+            take: 10, // Last 10 messages (5 exchanges)
+        });
+
+        // Format chat history for RAG pipeline
+        const chatHistory: ChatHistory[] = [];
+        for (let i = recentMessages.length - 1; i >= 1; i -= 2) {
+            const humanMsg = recentMessages[i];
+            const aiMsg = recentMessages[i - 1];
+
+            if (humanMsg?.role === "user" && aiMsg?.role === "assistant") {
+                chatHistory.push({
+                    human: humanMsg.content,
+                    ai: aiMsg.content,
+                });
+            }
+        }
+
+        // Process query with enhanced RAG pipeline
+        const ragResult = await ragPipeline.queryWithHistory(
+            message,
+            chatHistory,
+            courseId || undefined
+        );
+
+        // Save AI response
+        const aiMessage = await prisma.chatMessage.create({
+            data: {
+                sessionId: session.id,
+                content: ragResult.answer,
+                role: "assistant",
+                sources: ragResult.sourceDocuments.map(
+                    (s) =>
+                        `${s.metadata.materialId}_chunk_${s.metadata.chunkIndex}`
+                ),
+                metadata: {
+                    sourceDocuments: ragResult.sourceDocuments.map((doc) => ({
+                        materialTitle: doc.metadata.materialTitle,
+                        content: doc.content.substring(0, 200),
+                        chunkIndex: doc.metadata.chunkIndex,
+                        materialId: doc.metadata.materialId,
+                    })),
+                    followUpQuestions: ragResult.followUpQuestions,
+                },
+            },
+        });
+
+        return NextResponse.json({
+            success: true,
+            sessionId: session.id,
+            messageId: aiMessage.id,
+            response: ragResult.answer,
+            sourceDocuments: ragResult.sourceDocuments,
+            followUpQuestions: ragResult.followUpQuestions,
+        });
+    } catch (error) {
+        console.error("Chat query error:", error);
+        return NextResponse.json(
+            {
+                success: false,
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Query processing failed",
+            },
+            { status: 500 }
+        );
     }
-
-    // Get or create chat session
-    let session;
-    if (sessionId) {
-      session = await prisma.chatSession.findUnique({
-        where: { id: sessionId },
-      });
-    }
-
-    if (!session) {
-      session = await prisma.chatSession.create({
-        data: {
-          userId,
-          courseId: courseId || null,
-          title: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
-        },
-      });
-    }
-
-    // Save user message
-    await prisma.chatMessage.create({
-      data: {
-        sessionId: session.id,
-        content: message,
-        role: 'user',
-        sources: [],
-      },
-    });
-
-    // Process query with RAG
-    const ragResult = await RAGService.processQuery(message, {
-      courseId: courseId || undefined,
-      maxResults: 5,
-      similarityThreshold: 0.6,
-    });
-
-    // Save AI response
-    await prisma.chatMessage.create({
-      data: {
-        sessionId: session.id,
-        content: ragResult.response,
-        role: 'assistant',
-        sources: ragResult.sources.map(s => s.chunkId),
-        metadata: {
-          confidence: ragResult.confidence,
-          isOutOfScope: ragResult.isOutOfScope,
-          sourcesDetails: ragResult.sources,
-        },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      sessionId: session.id,
-      response: ragResult.response,
-      sources: ragResult.sources,
-      confidence: ragResult.confidence,
-      isOutOfScope: ragResult.isOutOfScope,
-      followUpSuggestions: ragResult.followUpSuggestions,
-    });
-  } catch (error) {
-    console.error('Chat query error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Query processing failed',
-      },
-      { status: 500 }
-    );
-  }
 }
 
 /**
