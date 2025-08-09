@@ -104,7 +104,7 @@ export default function LandingPage() {
                                 <GraduationCap className="h-8 w-8 text-primary" />
                             </motion.div>
                             <span className="font-bold text-xl text-gray-900">
-                                AMATECH Hub
+                                AmaLearn
                             </span>
                         </motion.div>
 
@@ -144,7 +144,7 @@ export default function LandingPage() {
                                 variant="secondary"
                                 className="px-4 py-2 text-base"
                             >
-                                �️ AMATECH • Lagos State University
+                                Association of Management Technology Students
                             </Badge>
                         </motion.div>
 
@@ -165,11 +165,9 @@ export default function LandingPage() {
                             className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-3xl mx-auto"
                             variants={fadeInUp}
                         >
-                            The official learning hub for Association of
-                            Management Technology Students. Access comprehensive
-                            course materials, connect with expert tutors, and
-                            excel in your Project Management Technology studies
-                            at Lagos State University.
+                            Access comprehensive course materials, and excel in
+                            your Project Management Technology studies at Lagos
+                            State University (LASU).
                         </motion.p>
 
                         <motion.div
@@ -181,7 +179,7 @@ export default function LandingPage() {
                                     size="lg"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Join AMATECH Hub
+                                    Join fellow students
                                 </AnimatedButton>
                             </Link>
                             <Link href="/login">
@@ -190,7 +188,7 @@ export default function LandingPage() {
                                     size="lg"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Student Login
+                                    Student login
                                 </AnimatedButton>
                             </Link>
                         </motion.div>
