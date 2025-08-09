@@ -101,25 +101,28 @@ export default function LandingPage() {
                                 whileHover={{ rotate: 360 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                <GraduationCap className="h-8 w-8 text-primary" />
+                                <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                             </motion.div>
-                            <span className="font-bold text-xl text-gray-900">
+                            <span className="font-bold text-lg sm:text-xl text-gray-900">
                                 AmaLearn
                             </span>
                         </motion.div>
 
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-1 sm:space-x-3">
                             <Link href="/login">
                                 <AnimatedButton
                                     variant="ghost"
-                                    size="lg"
-                                    className="px-6 py-2"
+                                    size="sm"
+                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
                                 >
                                     Sign In
                                 </AnimatedButton>
                             </Link>
                             <Link href="/signup">
-                                <AnimatedButton size="lg" className="px-6 py-2">
+                                <AnimatedButton
+                                    size="sm"
+                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                >
                                     Get Started
                                 </AnimatedButton>
                             </Link>
@@ -134,7 +137,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto relative z-10 w-full">
                     <motion.div
                         ref={heroRef}
-                        className="text-center space-y-8 max-w-4xl mx-auto"
+                        className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto"
                         variants={staggerContainer}
                         initial="initial"
                         animate={heroInView ? "animate" : "initial"}
@@ -142,14 +145,14 @@ export default function LandingPage() {
                         <motion.div variants={fadeInUp}>
                             <Badge
                                 variant="secondary"
-                                className="px-4 py-2 text-base"
+                                className="px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base"
                             >
                                 Association of Management Technology Students
                             </Badge>
                         </motion.div>
 
                         <motion.h1
-                            className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
+                            className="text-4xl sm:text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
                             variants={fadeInUp}
                         >
                             Empowering Future
@@ -162,7 +165,7 @@ export default function LandingPage() {
                         </motion.h1>
 
                         <motion.p
-                            className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-3xl mx-auto"
+                            className="text-lg sm:text-xl md:text-2xl text-gray-600 leading-relaxed max-w-3xl mx-auto px-4"
                             variants={fadeInUp}
                         >
                             Access comprehensive course materials, and excel in
@@ -171,22 +174,22 @@ export default function LandingPage() {
                         </motion.p>
 
                         <motion.div
-                            className="flex flex-col sm:flex-row gap-4 justify-center"
+                            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4"
                             variants={fadeInUp}
                         >
-                            <Link href="/signup">
+                            <Link href="/signup" className="w-full sm:w-auto">
                                 <AnimatedButton
                                     size="lg"
-                                    className="text-lg p-8 w-auto inline-flex items-center"
+                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
                                 >
                                     Join fellow students
                                 </AnimatedButton>
                             </Link>
-                            <Link href="/login">
+                            <Link href="/login" className="w-full sm:w-auto">
                                 <AnimatedButton
                                     variant="outline"
                                     size="lg"
-                                    className="text-lg p-8 w-auto inline-flex items-center"
+                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
                                 >
                                     Student login
                                 </AnimatedButton>
@@ -194,12 +197,12 @@ export default function LandingPage() {
                         </motion.div>
 
                         <motion.div
-                            className="flex items-center justify-center space-x-12 pt-8"
+                            className="flex flex-wrap items-center justify-center gap-6 sm:gap-12 pt-6 sm:pt-8"
                             variants={fadeInUp}
                         >
                             <div className="text-center">
                                 <motion.div
-                                    className="text-4xl font-bold text-gray-900"
+                                    className="text-3xl sm:text-4xl font-bold text-gray-900"
                                     whileHover={{
                                         scale: 1.1,
                                         color: "#22c55e",
@@ -212,13 +215,13 @@ export default function LandingPage() {
                                 >
                                     300+
                                 </motion.div>
-                                <div className="text-gray-600">
+                                <div className="text-sm sm:text-base text-gray-600">
                                     AMATECH Students
                                 </div>
                             </div>
                             <div className="text-center">
                                 <motion.div
-                                    className="text-4xl font-bold text-gray-900"
+                                    className="text-3xl sm:text-4xl font-bold text-gray-900"
                                     whileHover={{
                                         scale: 1.1,
                                         color: "#22c55e",
@@ -231,13 +234,13 @@ export default function LandingPage() {
                                 >
                                     50+
                                 </motion.div>
-                                <div className="text-gray-600">
+                                <div className="text-sm sm:text-base text-gray-600">
                                     PMT Course Materials
                                 </div>
                             </div>
                             <div className="text-center">
                                 <motion.div
-                                    className="text-4xl font-bold text-gray-900"
+                                    className="text-3xl sm:text-4xl font-bold text-gray-900"
                                     whileHover={{
                                         scale: 1.1,
                                         color: "#22c55e",
@@ -250,7 +253,7 @@ export default function LandingPage() {
                                 >
                                     15+
                                 </motion.div>
-                                <div className="text-gray-600">
+                                <div className="text-sm sm:text-base text-gray-600">
                                     Faculty & Tutors
                                 </div>
                             </div>
@@ -260,10 +263,10 @@ export default function LandingPage() {
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-20 bg-gray-50">
+            <section id="features" className="py-16 sm:py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        className="text-center space-y-4 mb-16"
+                        className="text-center space-y-4 mb-12 sm:mb-16"
                         ref={featuresRef}
                         initial={{ opacity: 0, y: 60 }}
                         animate={
@@ -273,10 +276,10 @@ export default function LandingPage() {
                         }
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
                             Tailored for Project Management Technology
                         </h2>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                        <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
                             Specialized tools and resources designed
                             specifically for AMATECH students to excel in
                             Project Management Technology studies
@@ -284,7 +287,7 @@ export default function LandingPage() {
                     </motion.div>
 
                     <motion.div
-                        className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
                         variants={staggerContainer}
                         initial="initial"
                         animate={featuresInView ? "animate" : "initial"}
@@ -671,42 +674,42 @@ export default function LandingPage() {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+            <section className="py-16 sm:py-20 relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
                 <div className="absolute inset-0">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(34,197,94,0.1),transparent_50%)]"></div>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1),transparent_50%)]"></div>
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <motion.div
-                        className="space-y-8"
+                        className="space-y-6 sm:space-y-8"
                         initial={{ opacity: 0, y: 60 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         viewport={{ once: true }}
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
                             Ready to Excel in Project Management Technology?
                         </h2>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                        <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
                             Join your fellow AMATECH students who have
                             streamlined their studies with our centralized
                             learning platform designed specifically for Lagos
                             State University PMT students.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/signup">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
+                            <Link href="/signup" className="w-full sm:w-auto">
                                 <AnimatedButton
                                     size="lg"
-                                    className="text-lg p-8 w-auto inline-flex items-center"
+                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
                                 >
                                     Join AMATECH Hub Now
                                 </AnimatedButton>
                             </Link>
-                            <Link href="/contact">
+                            <Link href="/contact" className="w-full sm:w-auto">
                                 <AnimatedButton
                                     size="lg"
                                     variant="outline"
-                                    className="text-lg p-8 w-auto inline-flex items-center"
+                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
                                 >
                                     Student Login
                                 </AnimatedButton>
@@ -717,16 +720,16 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="bg-gray-50 border-t py-12">
+            <footer className="bg-gray-50 border-t py-8 sm:py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        className="grid md:grid-cols-4 gap-8"
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
                         initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         viewport={{ once: true }}
                     >
-                        <div className="space-y-4">
+                        <div className="space-y-4 sm:col-span-2 md:col-span-1">
                             <motion.div
                                 className="flex items-center space-x-2"
                                 whileHover={{ scale: 1.05 }}
@@ -740,13 +743,13 @@ export default function LandingPage() {
                                     whileHover={{ rotate: 360 }}
                                     transition={{ duration: 0.6 }}
                                 >
-                                    <GraduationCap className="h-8 w-8 text-primary" />
+                                    <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                                 </motion.div>
-                                <span className="font-bold text-xl text-gray-900">
+                                <span className="font-bold text-lg sm:text-xl text-gray-900">
                                     AMATECH Hub
                                 </span>
                             </motion.div>
-                            <p className="text-gray-600">
+                            <p className="text-sm sm:text-base text-gray-600">
                                 Empowering Project Management Technology
                                 students at Lagos State University with
                                 centralized learning resources and academic
@@ -808,16 +811,17 @@ export default function LandingPage() {
                     </motion.div>
 
                     <motion.div
-                        className="border-t border-gray-200 mt-12 pt-8 text-center"
+                        className="border-t border-gray-200 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center"
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.3 }}
                         viewport={{ once: true }}
                     >
-                        <p className="text-gray-600">
+                        <p className="text-sm sm:text-base text-gray-600">
                             © {new Date().getFullYear()} AMATECH Learning Hub -
                             Association of Management Technology Students, Lagos
-                            State University. <br />
+                            State University.{" "}
+                            <br className="hidden sm:inline" />
                             Developed with ❤️ by the Student President. All
                             rights reserved.
                         </p>

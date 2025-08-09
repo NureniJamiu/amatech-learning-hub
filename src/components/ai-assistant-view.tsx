@@ -101,29 +101,27 @@ export function AIAssistantView() {
     }, [selectedCourse, user, messages.length, currentSessionId, courses]);
 
     return (
-        <div
-            className="grid gap-4"
-            style={{ gridTemplateColumns: showHelp ? "2fr 1fr" : "1fr" }}
-        >
-            <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 sm:p-6">
+            <Card className="lg:col-span-2">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-blue-500" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="w-full sm:w-auto">
+                            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                                 AI Learning Assistant
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-sm">
                                 Ask questions about your course materials and
                                 get instant help
                             </CardDescription>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 w-full sm:w-auto">
                             {currentSessionId && (
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={startNewSession}
+                                    className="flex-1 sm:flex-none"
                                 >
                                     New Chat
                                 </Button>
@@ -131,13 +129,13 @@ export function AIAssistantView() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="mb-4">
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
                         <Select
                             value={selectedCourse}
                             onValueChange={setSelectedCourse}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select a course to focus on" />
                             </SelectTrigger>
                             <SelectContent>
@@ -153,14 +151,14 @@ export function AIAssistantView() {
                             </SelectContent>
                         </Select>
                         {selectedCourse !== "all" && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground">
                                 Questions will be answered using materials from
                                 this course
                             </p>
                         )}
                     </div>
-                    <ScrollArea className="h-[400px] pr-4">
-                        <div className="space-y-4">
+                    <ScrollArea className="h-[300px] sm:h-[400px] pr-2 sm:pr-4">
+                        <div className="space-y-3 sm:space-y-4">
                             {messages.map((msg) => (
                                 <div
                                     key={msg.id}
@@ -171,21 +169,21 @@ export function AIAssistantView() {
                                     }`}
                                 >
                                     <div
-                                        className={`flex max-w-[80%] items-start gap-2 rounded p-3 ${
+                                        className={`flex max-w-[90%] sm:max-w-[80%] items-start gap-2 rounded p-2 sm:p-3 ${
                                             msg.role === "user"
                                                 ? "bg-primary text-primary-foreground"
                                                 : "bg-muted text-muted-foreground"
                                         }`}
                                     >
                                         {msg.role === "assistant" && (
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarFallback>
+                                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                                                <AvatarFallback className="text-xs">
                                                     AI
                                                 </AvatarFallback>
                                             </Avatar>
                                         )}
-                                        <div className="flex-1">
-                                            <p className="whitespace-pre-wrap">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="whitespace-pre-wrap text-sm sm:text-base">
                                                 {msg.content}
                                             </p>
 
@@ -204,9 +202,9 @@ export function AIAssistantView() {
                                                                     }
                                                                     className="text-xs bg-background/50 rounded p-2"
                                                                 >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <BookOpen className="h-3 w-3" />
-                                                                        <span className="font-medium">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <BookOpen className="h-3 w-3 flex-shrink-0" />
+                                                                        <span className="font-medium truncate">
                                                                             {
                                                                                 source.materialTitle
                                                                             }
@@ -281,9 +279,11 @@ export function AIAssistantView() {
 
                             {isTyping && (
                                 <div className="flex justify-start">
-                                    <div className="flex items-start gap-2 rounded p-3 bg-muted text-muted-foreground">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback>AI</AvatarFallback>
+                                    <div className="flex items-start gap-2 rounded p-2 sm:p-3 bg-muted text-muted-foreground">
+                                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
+                                            <AvatarFallback className="text-xs">
+                                                AI
+                                            </AvatarFallback>
                                         </Avatar>
                                         <div className="flex items-center gap-1">
                                             <div className="flex space-x-1">
@@ -311,7 +311,7 @@ export function AIAssistantView() {
                         </div>
                     </ScrollArea>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="p-3 sm:p-6">
                     <div className="flex w-full items-center space-x-2">
                         <Input
                             placeholder="Ask me about your course materials..."
@@ -319,11 +319,13 @@ export function AIAssistantView() {
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={handleKeyPress}
                             disabled={isLoading}
+                            className="text-sm sm:text-base"
                         />
                         <Button
                             size="icon"
                             onClick={handleSendMessage}
                             disabled={isLoading || !message.trim()}
+                            className="flex-shrink-0"
                         >
                             <Send className="h-4 w-4" />
                             <span className="sr-only">Send</span>
@@ -333,11 +335,13 @@ export function AIAssistantView() {
             </Card>
 
             {showHelp && (
-                <Card>
+                <Card className="lg:col-span-1">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <div>
-                            <CardTitle>AI Assistant Features</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-lg">
+                                AI Assistant Features
+                            </CardTitle>
+                            <CardDescription className="text-sm">
                                 How to get the best help
                             </CardDescription>
                         </div>
@@ -345,26 +349,29 @@ export function AIAssistantView() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowHelp(false)}
+                            className="lg:hidden"
                         >
                             <X className="h-4 w-4" />
                             <span className="sr-only">Close</span>
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3 sm:space-y-4">
                         <div>
-                            <h3 className="font-semibold flex items-center gap-2">
+                            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                                 <BookOpen className="h-4 w-4" />
                                 Course Materials
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                                 I can answer questions based on your uploaded
                                 course materials. Select a specific course for
                                 more accurate, material-based responses.
                             </p>
                         </div>
                         <div>
-                            <h3 className="font-semibold">Smart Features</h3>
-                            <ul className="ml-4 list-disc text-sm text-muted-foreground space-y-1">
+                            <h3 className="font-semibold text-sm sm:text-base">
+                                Smart Features
+                            </h3>
+                            <ul className="ml-4 list-disc text-xs sm:text-sm text-muted-foreground space-y-1">
                                 <li>
                                     Source citations for all material-based
                                     answers
@@ -377,8 +384,10 @@ export function AIAssistantView() {
                             </ul>
                         </div>
                         <div>
-                            <h3 className="font-semibold">Example Questions</h3>
-                            <ul className="ml-4 list-disc text-sm text-muted-foreground space-y-1">
+                            <h3 className="font-semibold text-sm sm:text-base">
+                                Example Questions
+                            </h3>
+                            <ul className="ml-4 list-disc text-xs sm:text-sm text-muted-foreground space-y-1">
                                 <li>
                                     Explain the concept of [topic] from my
                                     materials
@@ -392,11 +401,11 @@ export function AIAssistantView() {
                         </div>
                         {sessions.length > 0 && (
                             <div>
-                                <h3 className="font-semibold flex items-center gap-2">
+                                <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                                     <Clock className="h-4 w-4" />
                                     Recent Sessions
                                 </h3>
-                                <div className="space-y-2 max-h-32 overflow-y-auto">
+                                <div className="space-y-2 max-h-24 sm:max-h-32 overflow-y-auto">
                                     {sessions.slice(0, 5).map((session) => (
                                         <Button
                                             key={session.id}
@@ -407,8 +416,8 @@ export function AIAssistantView() {
                                                 loadSession(session.id)
                                             }
                                         >
-                                            <div>
-                                                <p className="font-medium truncate">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-medium truncate text-xs sm:text-sm">
                                                     {session.title ||
                                                         "Untitled Chat"}
                                                 </p>
@@ -424,8 +433,10 @@ export function AIAssistantView() {
                             </div>
                         )}
                         <div>
-                            <h3 className="font-semibold">Limitations</h3>
-                            <p className="text-sm text-muted-foreground">
+                            <h3 className="font-semibold text-sm sm:text-base">
+                                Limitations
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                                 Responses are based on uploaded materials. For
                                 official course information, always refer to
                                 your instructors and course guidelines.

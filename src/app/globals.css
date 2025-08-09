@@ -125,6 +125,39 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, [role="button"], .clickable {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Improve table scroll on mobile */
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Better mobile typography */
+    h1 {
+      @apply text-xl sm:text-2xl md:text-3xl;
+    }
+
+    h2 {
+      @apply text-lg sm:text-xl md:text-2xl;
+    }
+
+    h3 {
+      @apply text-base sm:text-lg;
+    }
+  }
 }
 
 @layer utilities {

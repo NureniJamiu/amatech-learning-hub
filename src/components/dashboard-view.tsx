@@ -166,26 +166,26 @@ export function DashboardView() {
     const availableCourses = allLevelCoursesResponse?.courses || [];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                     {greeting}, {currentUser.firstname}!
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                     Welcome back to your learning dashboard
                 </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
                             Total Courses
                         </CardTitle>
-                        <BookOpen className="size-6 text-blue-600" />
+                        <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-xl sm:text-2xl font-bold">
                             {userCourses.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -200,13 +200,13 @@ export function DashboardView() {
                         </CardTitle>
                         <Badge
                             variant="outline"
-                            className="text-green-600 border-green-600"
+                            className="text-green-600 border-green-600 text-xs"
                         >
                             Level {currentUser.level}
                         </Badge>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-xl sm:text-2xl font-bold">
                             Semester {currentUser.currentSemester}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -219,10 +219,10 @@ export function DashboardView() {
                         <CardTitle className="text-sm font-medium">
                             Timetable Entries
                         </CardTitle>
-                        <Table2Icon className="size-6 text-yellow-700" />
+                        <Table2Icon className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-700" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-xl sm:text-2xl font-bold">
                             {timetableEntries.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -235,10 +235,10 @@ export function DashboardView() {
                         <CardTitle className="text-sm font-medium">
                             Department
                         </CardTitle>
-                        <Calendar className="size-6 text-purple-600" />
+                        <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-sm font-bold">
+                        <div className="text-xs sm:text-sm font-bold">
                             {currentUser.department}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -248,16 +248,18 @@ export function DashboardView() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
-                    <CardHeader className="flex justify-between items-center">
-                        <div>
-                            <CardTitle>My Timetable</CardTitle>
-                            <CardDescription>
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 sm:gap-4">
+                <Card className="lg:col-span-4 overflow-hidden">
+                    <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                        <div className="w-full sm:w-auto">
+                            <CardTitle className="text-lg sm:text-xl">
+                                My Timetable
+                            </CardTitle>
+                            <CardDescription className="text-sm">
                                 Your recent class schedule
                             </CardDescription>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 w-full sm:w-auto">
                             <Dialog
                                 open={isCreateDialogOpen}
                                 onOpenChange={setIsCreateDialogOpen}
@@ -265,10 +267,12 @@ export function DashboardView() {
                                 <DialogTrigger asChild>
                                     <Button
                                         size="sm"
-                                        className="rounded cursor-pointer"
+                                        className="rounded cursor-pointer flex-1 sm:flex-none"
                                     >
-                                        Add Class
-                                        <Plus className="size-4" />
+                                        <span className="sm:mr-2">
+                                            Add Class
+                                        </span>
+                                        <Plus className="h-4 w-4 hidden sm:inline" />
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent>
@@ -447,79 +451,100 @@ export function DashboardView() {
                                 size="sm"
                                 variant="outline"
                                 onClick={handleViewTimetable}
+                                className="flex-1 sm:flex-none"
                             >
                                 View All
                             </Button>
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-3 sm:p-6">
                         {isLoadingTimetable ? (
                             <div className="flex items-center justify-center py-8">
-                                <p className="text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     Loading timetable...
                                 </p>
                             </div>
                         ) : recentTimetableEntries.length === 0 ? (
-                            <div className="text-center py-8">
-                                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold mb-2">
+                            <div className="text-center py-6 sm:py-8">
+                                <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+                                <h3 className="text-base sm:text-lg font-semibold mb-2">
                                     No Classes Scheduled
                                 </h3>
-                                <p className="text-muted-foreground mb-4">
+                                <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
                                     You haven't added any classes to your
                                     timetable yet.
                                 </p>
                                 <Button
+                                    size="sm"
                                     onClick={() => setIsCreateDialogOpen(true)}
+                                    className="w-full sm:w-auto"
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Your First Class
                                 </Button>
                             </div>
                         ) : (
-                            <Table className="overflow-x-hidden">
-                                <TableHeader className="overflow-x-clip">
-                                    <TableRow>
-                                        <TableHead>Day</TableHead>
-                                        <TableHead>Time</TableHead>
-                                        <TableHead>Course</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead className="text-right">
-                                            Semester
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentTimetableEntries.map((entry) => (
-                                        <TableRow key={entry.id}>
-                                            <TableCell>{entry.day}</TableCell>
-                                            <TableCell>{entry.time}</TableCell>
-                                            <TableCell>
-                                                <Button
-                                                    variant="link"
-                                                    className="h-auto p-0 font-medium"
-                                                    onClick={() =>
-                                                        handleViewCourse(
-                                                            entry.course
-                                                                ?.code || ""
-                                                        )
-                                                    }
-                                                >
-                                                    {entry.course?.code}
-                                                </Button>
-                                            </TableCell>
-                                            <TableCell>
-                                                {entry.location}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Badge variant="outline">
-                                                    Semester {entry.semester}
-                                                </Badge>
-                                            </TableCell>
+                            <div className="overflow-x-auto">
+                                <Table className="min-w-full">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-xs sm:text-sm">
+                                                Day
+                                            </TableHead>
+                                            <TableHead className="text-xs sm:text-sm">
+                                                Time
+                                            </TableHead>
+                                            <TableHead className="text-xs sm:text-sm">
+                                                Course
+                                            </TableHead>
+                                            <TableHead className="text-xs sm:text-sm">
+                                                Location
+                                            </TableHead>
+                                            <TableHead className="text-xs sm:text-sm text-right">
+                                                Semester
+                                            </TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {recentTimetableEntries.map((entry) => (
+                                            <TableRow key={entry.id}>
+                                                <TableCell className="text-xs sm:text-sm">
+                                                    {entry.day}
+                                                </TableCell>
+                                                <TableCell className="text-xs sm:text-sm">
+                                                    {entry.time}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button
+                                                        variant="link"
+                                                        className="h-auto p-0 font-medium text-xs sm:text-sm"
+                                                        onClick={() =>
+                                                            handleViewCourse(
+                                                                entry.course
+                                                                    ?.code || ""
+                                                            )
+                                                        }
+                                                    >
+                                                        {entry.course?.code}
+                                                    </Button>
+                                                </TableCell>
+                                                <TableCell className="text-xs sm:text-sm">
+                                                    {entry.location}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-xs"
+                                                    >
+                                                        Semester{" "}
+                                                        {entry.semester}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
                     </CardContent>
                 </Card>

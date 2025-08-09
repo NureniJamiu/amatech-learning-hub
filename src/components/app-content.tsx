@@ -18,12 +18,18 @@ export function AppContent() {
 
     // Otherwise show regular student content
     return (
-        <div className="flex-1">
-            {currentView === "dashboard" && <DashboardView />}
-            {currentView === "courses" && selectedCourse && <CourseContent />}
-            {currentView === "courses" && !selectedCourse && <CoursesView />}
-            {currentView === "timetable" && <TimetableView />}
-            {currentView === "ai-assistant" && <AIAssistantView />}
+        <div className="flex-1 overflow-auto">
+            <div className="h-full w-full">
+                {currentView === "dashboard" && <DashboardView />}
+                {currentView === "courses" && selectedCourse && (
+                    <CourseContent />
+                )}
+                {currentView === "courses" && !selectedCourse && (
+                    <CoursesView />
+                )}
+                {currentView === "timetable" && <TimetableView />}
+                {currentView === "ai-assistant" && <AIAssistantView />}
+            </div>
         </div>
     );
 }
