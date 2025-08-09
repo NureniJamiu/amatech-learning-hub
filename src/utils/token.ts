@@ -1,8 +1,10 @@
 // JWT implementation using Web APIs (Edge Runtime compatible)
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not defined");
+function getJwtSecret(): string {
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET environment variable is not defined");
+    }
+    return JWT_SECRET;
 }
 
 // Base64 URL encode
@@ -68,7 +70,7 @@ export const generateAuthToken = async (userId: string): Promise<string> => {
     const encodedPayload = base64UrlEncode(JSON.stringify(payload));
     const data = `${encodedHeader}.${encodedPayload}`;
 
-    const signature = await createSignature(data, JWT_SECRET!);
+    const signature = await createSignature(data, getJwtSecret());
 
     return `${data}.${signature}`;
 };
@@ -77,13 +79,10 @@ export const verifyAuthToken = async (
     token: string
 ): Promise<{ userId: string } | null> => {
     try {
-        console.log("Verifying token - JWT_SECRET exists:", !!JWT_SECRET);
-        console.log("Token length:", token?.length);
-        console.log("Token preview:", token?.substring(0, 20) + "...");
+        const jwtSecret = getJwtSecret();
 
         const parts = token.split(".");
         if (parts.length !== 3) {
-            console.error("Token verification failed: Invalid token format");
             return null;
         }
 
@@ -91,9 +90,8 @@ export const verifyAuthToken = async (
         const data = `${encodedHeader}.${encodedPayload}`;
 
         // Verify signature
-        const isValid = await verifySignature(data, signature, JWT_SECRET!);
+        const isValid = await verifySignature(data, signature, jwtSecret);
         if (!isValid) {
-            console.error("Token verification failed: Invalid signature");
             return null;
         }
 
@@ -103,20 +101,11 @@ export const verifyAuthToken = async (
         // Check expiration
         const now = Math.floor(Date.now() / 1000);
         if (payload.exp && payload.exp < now) {
-            console.error("Token verification failed: Token expired");
             return null;
         }
 
-        console.log(
-            "Token verification successful for userId:",
-            payload.userId
-        );
         return { userId: payload.userId };
     } catch (error) {
-        console.error(
-            "Token verification failed:",
-            error instanceof Error ? error.message : String(error)
-        );
         return null;
     }
 };

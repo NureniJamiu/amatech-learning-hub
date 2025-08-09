@@ -131,82 +131,75 @@ export class EnhancedRAGPipeline {
     courseId: string
   ): Promise<{ success: boolean; chunksCreated: number; error?: string }> {
     try {
-      console.log(`Processing PDF for RAG: ${materialTitle}`);
-
-      // Download and parse PDF
-      const response = await fetch(fileUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PDF: ${response.statusText}`);
-      }
-
-      const buffer = await response.arrayBuffer();
-      const pdfData = await parsePdfBuffer(Buffer.from(buffer));
-
-      if (!pdfData.text || pdfData.text.trim().length === 0) {
-        throw new Error("No text content found in PDF");
-      }
-
-      // Split text into chunks
-      const textChunks = this.splitText(pdfData.text);
-      console.log(`Created ${textChunks.length} text chunks`);
-
-      // Generate embeddings for all chunks
-      const embeddings = await this.generateEmbeddings(textChunks);
-      console.log(`Generated ${embeddings.length} embeddings`);
-
-      // Delete existing chunks for this material
-      await prisma.materialChunk.deleteMany({
-        where: { materialId }
-      });
-
-      // Save chunks to database
-      const chunkData = textChunks.map((chunk, index) => ({
-        id: `${materialId}_chunk_${index}`,
-        materialId,
-        content: chunk,
-        embedding: embeddings[index],
-        chunkIndex: index,
-        metadata: {
-          materialTitle,
-          courseId,
-          source: fileUrl,
-          chunkIndex: index,
-        },
-      }));
-
-      await prisma.materialChunk.createMany({
-        data: chunkData
-      });
-
-      // Update material status
-      await prisma.material.update({
-        where: { id: materialId },
-        data: {
-          processed: true,
-          processingStatus: 'completed'
+        // Download and parse PDF
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch PDF: ${response.statusText}`);
         }
-      });
 
-      console.log(`Successfully processed ${textChunks.length} chunks for ${materialTitle}`);
+        const buffer = await response.arrayBuffer();
+        const pdfData = await parsePdfBuffer(Buffer.from(buffer));
 
-      return {
-        success: true,
-        chunksCreated: textChunks.length
-      };
+        if (!pdfData.text || pdfData.text.trim().length === 0) {
+            throw new Error("No text content found in PDF");
+        }
 
+        // Split text into chunks
+        const textChunks = this.splitText(pdfData.text);
+
+        // Generate embeddings for all chunks
+        const embeddings = await this.generateEmbeddings(textChunks);
+
+        // Delete existing chunks for this material
+        await prisma.materialChunk.deleteMany({
+            where: { materialId },
+        });
+
+        // Save chunks to database
+        const chunkData = textChunks.map((chunk, index) => ({
+            id: `${materialId}_chunk_${index}`,
+            materialId,
+            content: chunk,
+            embedding: embeddings[index],
+            chunkIndex: index,
+            metadata: {
+                materialTitle,
+                courseId,
+                source: fileUrl,
+                chunkIndex: index,
+            },
+        }));
+
+        await prisma.materialChunk.createMany({
+            data: chunkData,
+        });
+
+        // Update material status
+        await prisma.material.update({
+            where: { id: materialId },
+            data: {
+                processed: true,
+                processingStatus: "completed",
+            },
+        });
+
+        return {
+            success: true,
+            chunksCreated: textChunks.length,
+        };
     } catch (error) {
-      console.error('PDF processing error:', error);
+        console.error("PDF processing error:", error);
 
-      await prisma.material.update({
-        where: { id: materialId },
-        data: { processingStatus: 'failed' }
-      });
+        await prisma.material.update({
+            where: { id: materialId },
+            data: { processingStatus: "failed" },
+        });
 
-      return {
-        success: false,
-        chunksCreated: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+        return {
+            success: false,
+            chunksCreated: 0,
+            error: error instanceof Error ? error.message : "Unknown error",
+        };
     }
   }
 

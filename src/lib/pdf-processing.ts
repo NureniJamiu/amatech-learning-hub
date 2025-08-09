@@ -32,10 +32,7 @@ export class PDFProcessingService {
      */
     static async processPDF(fileUrl: string): Promise<ProcessingResult> {
         try {
-            console.log("Processing PDF:", fileUrl);
-
             // Step 1: Validate PDF URL and accessibility
-            console.log("Validating PDF URL...");
             const validation = await PDFUtils.validatePdfUrl(fileUrl);
             if (!validation.isValid) {
                 throw new Error(`PDF validation failed: ${validation.error}`);

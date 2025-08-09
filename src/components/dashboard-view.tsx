@@ -46,11 +46,6 @@ import {
 import { useUserLevelSemesterCourses, useUserLevelCourses } from "@/hooks/use-courses";
 import { RecentlyAccessedCard } from "@/components/recently-accessed-card";
 
-// Import test utility (only in development)
-if (process.env.NODE_ENV === "development") {
-    import("@/utils/test-data");
-}
-
 const DAYS_OF_WEEK = [
     "Monday",
     "Tuesday",

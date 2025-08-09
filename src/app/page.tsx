@@ -31,6 +31,9 @@ import {
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const fadeInUp = {
     initial: { opacity: 0, y: 60 },
     animate: { opacity: 1, y: 0 },
@@ -101,7 +104,7 @@ export default function LandingPage() {
                                 <GraduationCap className="h-8 w-8 text-primary" />
                             </motion.div>
                             <span className="font-bold text-xl text-gray-900">
-                                Amalearn
+                                AMATECH Hub
                             </span>
                         </motion.div>
 
@@ -141,7 +144,7 @@ export default function LandingPage() {
                                 variant="secondary"
                                 className="px-4 py-2 text-base"
                             >
-                                🎓 Academic Excellence Platform
+                                �️ AMATECH • Lagos State University
                             </Badge>
                         </motion.div>
 
@@ -149,12 +152,12 @@ export default function LandingPage() {
                             className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
                             variants={fadeInUp}
                         >
-                            Your Gateway to
+                            Empowering Future
                             <motion.span
                                 className="text-primary block"
                                 variants={fadeInUp}
                             >
-                                Academic Success
+                                Project Managers
                             </motion.span>
                         </motion.h1>
 
@@ -162,10 +165,9 @@ export default function LandingPage() {
                             className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-3xl mx-auto"
                             variants={fadeInUp}
                         >
-                            Access comprehensive course materials, connect with
-                            expert tutors, and excel in your academic journey
-                            with our state-of-the-art learning management
-                            system.
+                            The official learning hub for Association of Management Technology Students. 
+                            Access comprehensive course materials, connect with expert tutors, and excel 
+                            in your Project Management Technology studies at Lagos State University.
                         </motion.p>
 
                         <motion.div
@@ -177,7 +179,7 @@ export default function LandingPage() {
                                     size="lg"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Start Learning Today
+                                    Join AMATECH Hub
                                 </AnimatedButton>
                             </Link>
                             <Link href="/login">
@@ -186,7 +188,7 @@ export default function LandingPage() {
                                     size="lg"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Access Your Account
+                                    Student Login
                                 </AnimatedButton>
                             </Link>
                         </motion.div>
@@ -208,29 +210,10 @@ export default function LandingPage() {
                                         damping: 25,
                                     }}
                                 >
-                                    500+
+                                    300+
                                 </motion.div>
                                 <div className="text-gray-600">
-                                    Active Students
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <motion.div
-                                    className="text-4xl font-bold text-gray-900"
-                                    whileHover={{
-                                        scale: 1.1,
-                                        color: "#22c55e",
-                                    }}
-                                    transition={{
-                                        type: "spring",
-                                        stiffness: 400,
-                                        damping: 25,
-                                    }}
-                                >
-                                    150+
-                                </motion.div>
-                                <div className="text-gray-600">
-                                    Course Materials
+                                    AMATECH Students
                                 </div>
                             </div>
                             <div className="text-center">
@@ -249,7 +232,26 @@ export default function LandingPage() {
                                     50+
                                 </motion.div>
                                 <div className="text-gray-600">
-                                    Expert Tutors
+                                    PMT Course Materials
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <motion.div
+                                    className="text-4xl font-bold text-gray-900"
+                                    whileHover={{
+                                        scale: 1.1,
+                                        color: "#22c55e",
+                                    }}
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 400,
+                                        damping: 25,
+                                    }}
+                                >
+                                    15+
+                                </motion.div>
+                                <div className="text-gray-600">
+                                    Faculty & Tutors
                                 </div>
                             </div>
                         </motion.div>
@@ -272,11 +274,11 @@ export default function LandingPage() {
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     >
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-                            Comprehensive Learning Features
+                            Tailored for Project Management Technology
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Everything you need for academic success, from
-                            course materials to expert guidance
+                            Specialized tools and resources designed specifically for AMATECH students 
+                            to excel in Project Management Technology studies
                         </p>
                     </motion.div>
 
@@ -289,39 +291,39 @@ export default function LandingPage() {
                         {[
                             {
                                 icon: BookOpen,
-                                title: "Course Materials",
+                                title: "PMT Course Materials",
                                 description:
-                                    "Access comprehensive study materials, lecture notes, and academic resources",
+                                    "Access specialized Project Management Technology materials, lecture notes, and resources",
                             },
                             {
                                 icon: Video,
-                                title: "Video Lectures",
+                                title: "Recorded Lectures",
                                 description:
-                                    "Watch recorded lectures and interactive video content anytime, anywhere",
+                                    "Watch PMT lectures and interactive content from Lagos State University faculty",
                             },
                             {
                                 icon: Users,
-                                title: "Expert Tutors",
+                                title: "Faculty & Peer Support",
                                 description:
-                                    "Connect with qualified tutors for personalized guidance and support",
+                                    "Connect with AMATECH faculty and fellow students for academic guidance",
                             },
                             {
                                 icon: FileText,
-                                title: "Past Questions",
+                                title: "Past Questions Bank",
                                 description:
-                                    "Practice with extensive collections of past examination questions",
+                                    "Practice with organized collections of PMT past examination questions",
                             },
                             {
                                 icon: Calendar,
-                                title: "Study Timetables",
+                                title: "Academic Timetables",
                                 description:
-                                    "Organize your study schedule with intelligent timetable management",
+                                    "Stay organized with AMATECH class schedules and project deadlines",
                             },
                             {
                                 icon: MessageCircle,
-                                title: "AI Assistant",
+                                title: "AI Study Assistant",
                                 description:
-                                    "Get instant help with our AI-powered academic assistant",
+                                    "Get instant help with PMT concepts through our intelligent assistant",
                             },
                         ].map((feature, index) => {
                             const FeatureCard = () => {
@@ -540,13 +542,12 @@ export default function LandingPage() {
 
                                             <div className="text-center">
                                                 <p className="text-gray-600 italic text-lg">
-                                                    "This platform transformed
-                                                    my academic journey and
-                                                    helped me achieve excellence
-                                                    in my studies."
+                                                    "AMATECH Hub has transformed
+                                                    my Project Management Technology studies and
+                                                    helped me excel in my coursework."
                                                 </p>
                                                 <p className="text-gray-500 mt-2">
-                                                    - Final Year Student
+                                                    - AMATECH Final Year Student
                                                 </p>
                                             </div>
                                         </div>
@@ -572,11 +573,11 @@ export default function LandingPage() {
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     >
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-                            What Students Say
+                            What AMATECH Students Say
                         </h2>
                         <p className="text-xl text-gray-600">
-                            Hear from our successful students about their
-                            experience
+                            Hear from fellow Project Management Technology students about their
+                            experience with the platform
                         </p>
                     </motion.div>
 
@@ -589,21 +590,21 @@ export default function LandingPage() {
                     >
                         {[
                             {
-                                quote: "The comprehensive study materials and expert tutors helped me improve my grades significantly. Highly recommended!",
+                                quote: "AMATECH Hub has all our PMT materials in one place! No more searching through scattered resources. It's been a game-changer for my studies.",
                                 name: "Adebayo Johnson",
-                                role: "Computer Science, 400L",
+                                role: "PMT, 400L",
                                 initials: "AJ",
                             },
                             {
-                                quote: "The AI assistant feature is incredible! It helps me understand complex concepts and provides instant clarifications.",
+                                quote: "The AI assistant helps me understand complex project management concepts instantly. Perfect for late-night study sessions!",
                                 name: "Fatima Okonkwo",
-                                role: "Mathematics, 300L",
+                                role: "PMT, 300L",
                                 initials: "FO",
                             },
                             {
-                                quote: "The past questions collection is extensive and well-organized. It made my exam preparation much more effective.",
+                                quote: "The organized past questions and faculty support made my exam prep so much easier. Proud to be part of AMATECH!",
                                 name: "Tunde Adebayo",
-                                role: "Engineering, 500L",
+                                role: "PMT, 500L",
                                 initials: "TA",
                             },
                         ].map((testimonial, index) => (
@@ -681,12 +682,12 @@ export default function LandingPage() {
                         viewport={{ once: true }}
                     >
                         <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-                            Ready to Excel in Your Academics?
+                            Ready to Excel in Project Management Technology?
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Join thousands of students who have transformed
-                            their academic journey with our comprehensive
-                            learning platform.
+                            Join your fellow AMATECH students who have streamlined
+                            their studies with our centralized learning platform designed
+                            specifically for Lagos State University PMT students.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link href="/signup">
@@ -694,7 +695,7 @@ export default function LandingPage() {
                                     size="lg"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Start Learning Now
+                                    Join AMATECH Hub Now
                                 </AnimatedButton>
                             </Link>
                             <Link href="/contact">
@@ -703,7 +704,7 @@ export default function LandingPage() {
                                     variant="outline"
                                     className="text-lg p-8 w-auto inline-flex items-center"
                                 >
-                                    Access Your Account
+                                    Student Login
                                 </AnimatedButton>
                             </Link>
                         </div>
@@ -738,12 +739,12 @@ export default function LandingPage() {
                                     <GraduationCap className="h-8 w-8 text-primary" />
                                 </motion.div>
                                 <span className="font-bold text-xl text-gray-900">
-                                    Amalearn
+                                    AMATECH Hub
                                 </span>
                             </motion.div>
                             <p className="text-gray-600">
-                                Empowering students with comprehensive academic
-                                resources and expert guidance.
+                                Empowering Project Management Technology students at Lagos State University 
+                                with centralized learning resources and academic support.
                             </p>
                         </div>
 
@@ -808,9 +809,9 @@ export default function LandingPage() {
                         viewport={{ once: true }}
                     >
                         <p className="text-gray-600">
-                            © {new Date().getFullYear()} Association of
-                            Management Technology Students Learning Hub. <br />
-                            All rights reserved.
+                            © {new Date().getFullYear()} AMATECH Learning Hub - Association of
+                            Management Technology Students, Lagos State University. <br />
+                            Developed with ❤️ by the Student President. All rights reserved.
                         </p>
                     </motion.div>
                 </div>

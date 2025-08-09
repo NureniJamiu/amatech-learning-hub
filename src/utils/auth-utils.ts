@@ -46,22 +46,15 @@ export const redirectIfAuthenticated = () => {
                 const user = JSON.parse(userData);
                 // Additional check: make sure the user object has required properties
                 if (user && user.id && user.email) {
-                    console.log(
-                        "User is authenticated, redirecting to dashboard"
-                    );
                     window.location.href = "/dashboard";
                 } else {
-                    console.log("Invalid user data found, clearing storage");
                     // Clear invalid data
                     userStorage.clearUser();
                 }
             } catch (error) {
-                console.log("Error parsing user data, clearing storage");
                 // Clear corrupted data
                 userStorage.clearUser();
             }
-        } else {
-            console.log("No valid authentication found, staying on login page");
         }
     }, 100);
 };

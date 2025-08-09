@@ -15,8 +15,6 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const referer = request.headers.get("referer");
 
-    console.log("Middleware processing:", pathname, "Referer:", referer);
-
     // Skip middleware for static files and Next.js internals
     if (
         pathname.startsWith("/_next") ||
@@ -51,7 +49,6 @@ export async function middleware(request: NextRequest) {
         request.headers.get("x-redirect-count") || "0"
     );
     if (redirectCount > 2) {
-        console.log("Potential redirect loop detected, breaking loop");
         return NextResponse.next();
     }
 
@@ -60,11 +57,8 @@ export async function middleware(request: NextRequest) {
         request.cookies.get("token")?.value ||
         request.headers.get("authorization")?.replace("Bearer ", "");
 
-    console.log("Token check for", pathname, "- token exists:", !!token);
-
     // If no token, redirect to login
     if (!token) {
-        console.log("No token found for", pathname, "redirecting to login");
         if (pathname.startsWith("/api/")) {
             return NextResponse.json(
                 { message: "Unauthorized" },
@@ -82,10 +76,8 @@ export async function middleware(request: NextRequest) {
 
     // Verify token
     const decoded = await verifyAuthToken(token);
-    console.log("Token verification for", pathname, "- valid:", !!decoded);
 
     if (!decoded) {
-        console.log("Invalid token for", pathname, "redirecting to login");
         if (pathname.startsWith("/api/")) {
             return NextResponse.json(
                 { message: "Invalid token" },
@@ -101,8 +93,6 @@ export async function middleware(request: NextRequest) {
         return response;
     }
 
-    console.log("Token verified for", pathname, "allowing access");
-
     // If user is authenticated and trying to access login page, redirect to dashboard
     // But only if the request is not coming from a redirect to prevent loops
     if (
@@ -110,9 +100,6 @@ export async function middleware(request: NextRequest) {
         !referer?.includes("/login") &&
         redirectCount < 2
     ) {
-        console.log(
-            "Authenticated user on login page, redirecting to dashboard"
-        );
         const response = NextResponse.redirect(
             new URL("/dashboard", request.url)
         );

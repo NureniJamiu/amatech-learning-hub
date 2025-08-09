@@ -9,21 +9,15 @@ export const authenticateRequest = async (
         req.headers.get("authorization") || req.headers.get("Authorization");
 
     if (!authHeader) {
-        console.warn("Missing Authorization header");
         return null;
     }
 
     if (!authHeader.startsWith("Bearer ")) {
-        console.warn("Malformed Authorization header:", authHeader);
         return null;
     }
 
     const token = authHeader.split(" ")[1];
     const decoded = await verifyAuthToken(token);
-
-    if (!decoded) {
-        console.warn("Token verification failed");
-    }
 
     return decoded ?? null;
 };
@@ -52,13 +46,11 @@ export const authenticateAndValidateUser = async (
         });
 
         if (!user) {
-            console.warn("User not found for valid token:", authResult.userId);
             return null;
         }
 
         return { userId: authResult.userId, user };
     } catch (error) {
-        console.error("Error validating user:", error);
         return null;
     }
 };
