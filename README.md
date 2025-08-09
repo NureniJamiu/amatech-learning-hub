@@ -245,5 +245,5 @@ If you encounter any issues or have questions:
 
 ---
 
-**Built with ❤️ for AMATECH students by the Student President and Development Team**  
+**Built with ❤️ for AMATECH students by the Student President and Development Team**
 *Empowering Project Management Technology education at Lagos State University*

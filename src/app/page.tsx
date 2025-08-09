@@ -165,9 +165,11 @@ export default function LandingPage() {
                             className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-3xl mx-auto"
                             variants={fadeInUp}
                         >
-                            The official learning hub for Association of Management Technology Students. 
-                            Access comprehensive course materials, connect with expert tutors, and excel 
-                            in your Project Management Technology studies at Lagos State University.
+                            The official learning hub for Association of
+                            Management Technology Students. Access comprehensive
+                            course materials, connect with expert tutors, and
+                            excel in your Project Management Technology studies
+                            at Lagos State University.
                         </motion.p>
 
                         <motion.div
@@ -277,8 +279,9 @@ export default function LandingPage() {
                             Tailored for Project Management Technology
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Specialized tools and resources designed specifically for AMATECH students 
-                            to excel in Project Management Technology studies
+                            Specialized tools and resources designed
+                            specifically for AMATECH students to excel in
+                            Project Management Technology studies
                         </p>
                     </motion.div>
 
@@ -543,8 +546,10 @@ export default function LandingPage() {
                                             <div className="text-center">
                                                 <p className="text-gray-600 italic text-lg">
                                                     "AMATECH Hub has transformed
-                                                    my Project Management Technology studies and
-                                                    helped me excel in my coursework."
+                                                    my Project Management
+                                                    Technology studies and
+                                                    helped me excel in my
+                                                    coursework."
                                                 </p>
                                                 <p className="text-gray-500 mt-2">
                                                     - AMATECH Final Year Student
@@ -576,8 +581,8 @@ export default function LandingPage() {
                             What AMATECH Students Say
                         </h2>
                         <p className="text-xl text-gray-600">
-                            Hear from fellow Project Management Technology students about their
-                            experience with the platform
+                            Hear from fellow Project Management Technology
+                            students about their experience with the platform
                         </p>
                     </motion.div>
 
@@ -685,9 +690,10 @@ export default function LandingPage() {
                             Ready to Excel in Project Management Technology?
                         </h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Join your fellow AMATECH students who have streamlined
-                            their studies with our centralized learning platform designed
-                            specifically for Lagos State University PMT students.
+                            Join your fellow AMATECH students who have
+                            streamlined their studies with our centralized
+                            learning platform designed specifically for Lagos
+                            State University PMT students.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link href="/signup">
@@ -743,8 +749,10 @@ export default function LandingPage() {
                                 </span>
                             </motion.div>
                             <p className="text-gray-600">
-                                Empowering Project Management Technology students at Lagos State University 
-                                with centralized learning resources and academic support.
+                                Empowering Project Management Technology
+                                students at Lagos State University with
+                                centralized learning resources and academic
+                                support.
                             </p>
                         </div>
 
@@ -809,9 +817,11 @@ export default function LandingPage() {
                         viewport={{ once: true }}
                     >
                         <p className="text-gray-600">
-                            © {new Date().getFullYear()} AMATECH Learning Hub - Association of
-                            Management Technology Students, Lagos State University. <br />
-                            Developed with ❤️ by the Student President. All rights reserved.
+                            © {new Date().getFullYear()} AMATECH Learning Hub -
+                            Association of Management Technology Students, Lagos
+                            State University. <br />
+                            Developed with ❤️ by the Student President. All
+                            rights reserved.
                         </p>
                     </motion.div>
                 </div>
