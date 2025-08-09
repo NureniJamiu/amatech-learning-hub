@@ -141,7 +141,7 @@ export function CourseContent() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="flex items-center gap-4">
                 <Button
                     variant="ghost"
@@ -150,72 +150,73 @@ export function CourseContent() {
                     className="flex items-center gap-2"
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Courses
+                    <span className="hidden sm:inline">Back to Courses</span>
+                    <span className="sm:hidden">Back</span>
                 </Button>
             </div>
 
             <Card>
                 <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
                                 {selectedCourse.code} - {selectedCourse.title}
                             </h1>
                         </div>
-                        <Badge className="bg-green-500 hover:bg-green-600">
+                        <Badge className="bg-green-500 hover:bg-green-600 flex-shrink-0">
                             {selectedCourse.units} units
                         </Badge>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                         {selectedCourse.description}
                     </p>
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">
+                            <CardTitle className="text-lg sm:text-xl">
                                 Available Course Material(s)
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             {selectedCourse.materials.length === 0 ? (
-                                <p className="text-muted-foreground">
+                                <p className="text-sm sm:text-base text-muted-foreground">
                                     No materials available for this course.
                                 </p>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-2 sm:space-y-3">
                                     {selectedCourse.materials.map(
                                         (material) => (
                                             <div
                                                 key={material.id}
-                                                className="flex items-center justify-between py-2 border-b last:border-0"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 sm:p-3 border rounded-lg"
                                             >
-                                                <span className="text-red-500">
+                                                <span className="text-sm sm:text-base text-red-500 font-medium truncate min-w-0 flex-1">
                                                     {material.title}
                                                 </span>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 flex-shrink-0">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-blue-500"
+                                                        className="text-blue-500 text-xs sm:text-sm"
                                                         onClick={() =>
                                                             handleOpenPdf(
                                                                 material
                                                             )
                                                         }
                                                     >
-                                                        <ExternalLink className="h-4 w-4 mr-1" />
+                                                        <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                                         Open
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-green-500"
+                                                        className="text-green-500 text-xs sm:text-sm"
                                                         onClick={() =>
                                                             handleDownload(
                                                                 material.fileUrl,
@@ -224,7 +225,7 @@ export function CourseContent() {
                                                             )
                                                         }
                                                     >
-                                                        <Download className="h-4 w-4 mr-1" />
+                                                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                                         Download
                                                     </Button>
                                                 </div>
@@ -236,46 +237,46 @@ export function CourseContent() {
                         </CardContent>
                     </Card>
 
-                    <Card className="mt-6">
+                    <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">
+                            <CardTitle className="text-lg sm:text-xl">
                                 Available Past Questions
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             {selectedCourse.pastQuestions.length === 0 ? (
-                                <p className="text-muted-foreground">
+                                <p className="text-sm sm:text-base text-muted-foreground">
                                     No past questions available for this course.
                                 </p>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-2 sm:space-y-3">
                                     {selectedCourse.pastQuestions.map(
                                         (pastQuestion) => (
                                             <div
                                                 key={pastQuestion.id}
-                                                className="flex items-center justify-between py-2 border-b last:border-0"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 sm:p-3 border rounded-lg"
                                             >
-                                                <span>
+                                                <span className="text-sm sm:text-base font-medium truncate min-w-0 flex-1">
                                                     {pastQuestion.title}
                                                 </span>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 flex-shrink-0">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-blue-500"
+                                                        className="text-blue-500 text-xs sm:text-sm"
                                                         onClick={() =>
                                                             handleOpenPdf(
                                                                 pastQuestion
                                                             )
                                                         }
                                                     >
-                                                        <ExternalLink className="h-4 w-4 mr-1" />
+                                                        <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                                         Open
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-green-500"
+                                                        className="text-green-500 text-xs sm:text-sm"
                                                         onClick={() =>
                                                             handleDownload(
                                                                 pastQuestion.fileUrl,
@@ -284,7 +285,7 @@ export function CourseContent() {
                                                             )
                                                         }
                                                     >
-                                                        <Download className="h-4 w-4 mr-1" />
+                                                        <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                                         Download
                                                     </Button>
                                                 </div>
@@ -297,24 +298,24 @@ export function CourseContent() {
                     </Card>
                 </div>
 
-                <div>
+                <div className="space-y-4 sm:space-y-6">
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">Tutor(s)</CardTitle>
+                            <CardTitle className="text-lg sm:text-xl">Tutor(s)</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {selectedCourse.tutors.length === 0 ? (
-                                <p className="text-muted-foreground">
+                                <p className="text-sm sm:text-base text-muted-foreground">
                                     Unavailable...
                                 </p>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3 sm:space-y-4">
                                     {selectedCourse.tutors.map((tutor) => (
                                         <div
                                             key={tutor.id}
                                             className="flex items-center gap-3"
                                         >
-                                            <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">
+                                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-muted overflow-hidden flex-shrink-0">
                                                 {tutor.avatar ? (
                                                     <img
                                                         src={
@@ -325,16 +326,16 @@ export function CourseContent() {
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground">
+                                                    <div className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs sm:text-sm">
                                                         {tutor.name.charAt(0)}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div>
-                                                <p className="font-medium">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm sm:text-base font-medium truncate">
                                                     {tutor.name}
                                                 </p>
-                                                <p className="text-sm text-muted-foreground">
+                                                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                                                     {tutor.email}
                                                 </p>
                                             </div>
@@ -345,64 +346,64 @@ export function CourseContent() {
                         </CardContent>
                     </Card>
 
-                    <Card className="mt-6">
+                    <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">
+                            <CardTitle className="text-lg sm:text-xl">
                                 Course Details
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Code:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.code}
                                     </span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Units:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.units}
                                     </span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Level:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.level}
                                     </span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Semester:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.semester}
                                     </span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Materials:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.materials.length}
                                     </span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
+                                    <span className="text-sm text-muted-foreground">
                                         Past Questions:
                                     </span>
-                                    <span className="font-medium">
+                                    <span className="text-sm font-medium">
                                         {selectedCourse.pastQuestions.length}
                                     </span>
                                 </div>
