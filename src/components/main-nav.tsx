@@ -59,13 +59,14 @@ export function MainNav() {
     return (
         <>
             <SidebarGroup>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-1">
                     {mainNavItems.map((item) => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
                                 isActive={isNavActive(item.title)}
                                 onClick={() => handleNavClick(item.title)}
                                 tooltip={item.title}
+                                className="h-9"
                             >
                                 <item.icon className="h-4 w-4 shrink-0" />
                                 <span>{item.title}</span>

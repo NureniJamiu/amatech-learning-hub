@@ -36,13 +36,14 @@ export function AdminSidebar() {
         <>
             <SidebarGroup>
                 <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-1">
                     {adminMenuItems.map((item) => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
                                 isActive={activeAdminSection === item.id}
                                 onClick={() => setActiveAdminSection(item.id)}
                                 tooltip={item.title}
+                                className="h-9"
                             >
                                 <item.icon className="h-4 w-4 shrink-0" />
                                 <span>{item.title}</span>

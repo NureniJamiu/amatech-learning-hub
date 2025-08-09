@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 
 import { GraduationCap, LogOut, User } from "lucide-react";
 import { toast } from "react-toastify";
@@ -11,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { CourseSidebar } from "@/components/course-sidebar";
 import { MainNav } from "@/components/main-nav";
+import { UserProfile } from "@/components/user-profile";
 import {
     Sidebar,
     SidebarContent,
@@ -26,6 +28,7 @@ import {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { state } = useSidebar();
     const { isAdminMode, currentUser } = useAppContext();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const handleLogout = () => {
         try {
@@ -35,6 +38,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             console.error("Logout error:", error);
             toast.error("Failed to logout. Please try again.");
         }
+    };
+
+    const handleProfileClick = () => {
+        setIsProfileOpen(true);
     };
 
     return (
@@ -69,10 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton
-                                onClick={() => {
-                                    // Handle profile view - you can implement this later
-                                    console.log("View profile");
-                                }}
+                                onClick={handleProfileClick}
                                 tooltip="View Profile"
                                 className="w-full justify-center"
                             >
@@ -106,7 +110,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenu>
                 ) : (
                     <>
-                        <div className="flex items-center gap-3 p-3">
+                        <div
+                            className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
+                            onClick={handleProfileClick}
+                        >
                             <Avatar className="shrink-0">
                                 {currentUser?.avatar ? (
                                     <AvatarImage
@@ -123,19 +130,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     </AvatarFallback>
                                 )}
                             </Avatar>
-                            <div className="flex flex-col">
-                                <span className="font-medium whitespace-nowrap">
-                                    {currentUser?.name || "User"}
-                                </span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
                                     {currentUser?.email || "user@example.com"}
                                 </span>
-                                {currentUser?.level && (
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                        Level {currentUser.level} • Semester{" "}
-                                        {currentUser.currentSemester || 1}
-                                    </span>
-                                )}
                             </div>
                         </div>
                         <SidebarMenu>
@@ -153,6 +151,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 )}
             </SidebarFooter>
             <SidebarRail />
+
+            {/* User Profile Dialog */}
+            <UserProfile
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
+            />
         </Sidebar>
     );
 }

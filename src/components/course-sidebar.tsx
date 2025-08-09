@@ -7,9 +7,8 @@ import {
     FileText,
     NotebookPen,
 } from "lucide-react";
-
-import { bookmarks } from "@/data/mock-data";
 import { useAppContext } from "@/context/app-context";
+import { NavRecentlyAccessed } from "@/components/nav-recently-accessed";
 import {
     Select,
     SelectContent,
@@ -102,7 +101,11 @@ export function CourseSidebar() {
                     </div>
                 )}
 
-                <SidebarMenu className={state === "collapsed" ? "mt-0" : ""}>
+                <SidebarMenu
+                    className={`space-y-1 ${
+                        state === "collapsed" ? "mt-0" : ""
+                    }`}
+                >
                     {filteredCourses.length === 0
                         ? state !== "collapsed" && (
                               <div className="px-2 py-4 text-center text-sm text-muted-foreground">
@@ -119,6 +122,7 @@ export function CourseSidebar() {
                                       }
                                       onClick={() => handleCourseClick(course)}
                                       tooltip={`${course.code} - ${course.title}`}
+                                      className="h-9"
                                   >
                                       <NotebookPen className="h-4 w-4 shrink-0" />
                                       <span className="font-medium">
@@ -130,23 +134,7 @@ export function CourseSidebar() {
                 </SidebarMenu>
             </SidebarGroup>
 
-            <SidebarGroup>
-                {state !== "collapsed" && (
-                    <SidebarGroupLabel>Bookmarks</SidebarGroupLabel>
-                )}
-                <SidebarMenu>
-                    {bookmarks.map((bookmark) => (
-                        <SidebarMenuItem key={bookmark.id}>
-                            <SidebarMenuButton asChild tooltip={bookmark.title}>
-                                <a href={bookmark.url}>
-                                    <bookmark.icon className="h-4 w-4 shrink-0" />
-                                    <span>{bookmark.title}</span>
-                                </a>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-            </SidebarGroup>
+            <NavRecentlyAccessed />
         </>
     );
 }

@@ -63,3 +63,9 @@ export function clearRecentlyAccessed() {
 export function getRecentlyAccessedByType(type: 'material' | 'pastQuestion'): RecentlyAccessedItem[] {
   return getRecentlyAccessed().filter(item => item.type === type);
 }
+
+export function getRecentlyAccessedLimited(
+    limit: number = 3
+): RecentlyAccessedItem[] {
+    return getRecentlyAccessed().slice(0, limit);
+}
