@@ -67,6 +67,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect, type Option } from "@/components/ui/multi-select";
+import { ModalWrapper } from "@/components/ui/modal-wrapper";
+import {
+    FormSection,
+    FormField,
+    FormGrid,
+    FormActions,
+} from "@/components/ui/form-layout";
 
 // Import your hooks
 import {
@@ -237,10 +244,10 @@ export function CourseManagement() {
                             Add Course
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[525px]">
+                    <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                         <form onSubmit={handleSubmit}>
                             <DialogHeader>
-                                <DialogTitle>
+                                <DialogTitle className="text-xl font-semibold">
                                     {editingCourse
                                         ? "Edit Course"
                                         : "Add New Course"}
@@ -248,184 +255,162 @@ export function CourseManagement() {
                                 <DialogDescription>
                                     {editingCourse
                                         ? "Update the course information below."
-                                        : "Create a new course. Click save when you're done."}
+                                        : "Create a new course for students to enroll in."}
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="code"
-                                        className="text-right"
+
+                            <div className="space-y-6">
+                                <FormSection title="Basic Information">
+                                    <FormGrid columns={2}>
+                                        <FormField label="Course Code" required>
+                                            <Input
+                                                placeholder="e.g. MTE 301"
+                                                value={formData.code}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        code: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </FormField>
+
+                                        <FormField
+                                            label="Course Title"
+                                            required
+                                        >
+                                            <Input
+                                                placeholder="e.g. Engineering Economics"
+                                                value={formData.title}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        title: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </FormField>
+
+                                        <FormField
+                                            label="Credit Units"
+                                            hint="Number of credit units (1-6)"
+                                        >
+                                            <Input
+                                                type="number"
+                                                min="1"
+                                                max="6"
+                                                value={formData.units}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        units: +e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </FormField>
+
+                                        <FormField label="Academic Level">
+                                            <Select
+                                                value={formData.level.toString()}
+                                                onValueChange={(value) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        level: +value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select level" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="100">
+                                                        100 Level
+                                                    </SelectItem>
+                                                    <SelectItem value="200">
+                                                        200 Level
+                                                    </SelectItem>
+                                                    <SelectItem value="300">
+                                                        300 Level
+                                                    </SelectItem>
+                                                    <SelectItem value="400">
+                                                        400 Level
+                                                    </SelectItem>
+                                                    <SelectItem value="500">
+                                                        500 Level
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormField>
+
+                                        <FormField label="Semester">
+                                            <Select
+                                                value={formData.semester.toString()}
+                                                onValueChange={(value) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        semester: +value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select semester" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1">
+                                                        1st Semester
+                                                    </SelectItem>
+                                                    <SelectItem value="2">
+                                                        2nd Semester
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormField>
+
+                                        <FormField
+                                            label="Assigned Tutors"
+                                            hint="Select tutors for this course"
+                                        >
+                                            <MultiSelect
+                                                options={tutorOptions}
+                                                selected={formData.tutorIds}
+                                                onValueChange={(values) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        tutorIds: values,
+                                                    })
+                                                }
+                                                placeholder="Select tutors"
+                                            />
+                                        </FormField>
+                                    </FormGrid>
+                                </FormSection>
+
+                                <FormSection
+                                    title="Course Description"
+                                    description="Provide additional details about the course"
+                                >
+                                    <FormField
+                                        label="Description"
+                                        hint="Optional course description"
                                     >
-                                        Code *
-                                    </Label>
-                                    <Input
-                                        id="code"
-                                        placeholder="e.g. MTE 301"
-                                        className="col-span-3"
-                                        value={formData.code}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                code: e.target.value,
-                                            })
-                                        }
-                                        required
-                                    />
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="title"
-                                        className="text-right"
-                                    >
-                                        Title *
-                                    </Label>
-                                    <Input
-                                        id="title"
-                                        placeholder="e.g. Engineering Economics"
-                                        className="col-span-3"
-                                        value={formData.title}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                title: e.target.value,
-                                            })
-                                        }
-                                        required
-                                    />
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="units"
-                                        className="text-right"
-                                    >
-                                        Units
-                                    </Label>
-                                    <Input
-                                        id="units"
-                                        type="number"
-                                        min="1"
-                                        max="6"
-                                        className="col-span-3"
-                                        value={formData.units}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                units: +e.target.value,
-                                            })
-                                        }
-                                    />
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="level"
-                                        className="text-right"
-                                    >
-                                        Level
-                                    </Label>
-                                    <Select
-                                        value={formData.level.toString()}
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                level: +value,
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger className="col-span-3">
-                                            <SelectValue placeholder="Select level" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="100">
-                                                100
-                                            </SelectItem>
-                                            <SelectItem value="200">
-                                                200
-                                            </SelectItem>
-                                            <SelectItem value="300">
-                                                300
-                                            </SelectItem>
-                                            <SelectItem value="400">
-                                                400
-                                            </SelectItem>
-                                            <SelectItem value="500">
-                                                500
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="semester"
-                                        className="text-right"
-                                    >
-                                        Semester
-                                    </Label>
-                                    <Select
-                                        value={formData.semester.toString()}
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                semester: +value,
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger className="col-span-3">
-                                            <SelectValue placeholder="Select semester" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="1">
-                                                1st Semester
-                                            </SelectItem>
-                                            <SelectItem value="2">
-                                                2nd Semester
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="tutors"
-                                        className="text-right"
-                                    >
-                                        Tutors
-                                    </Label>
-                                    <div className="col-span-3">
-                                        <MultiSelect
-                                            options={tutorOptions}
-                                            selected={formData.tutorIds}
-                                            onValueChange={(values) =>
+                                        <Textarea
+                                            rows={4}
+                                            value={formData.description}
+                                            onChange={(e) =>
                                                 setFormData({
                                                     ...formData,
-                                                    tutorIds: values,
+                                                    description: e.target.value,
                                                 })
                                             }
-                                            placeholder="Select tutors"
+                                            placeholder="Enter course description..."
                                         />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-4 items-start gap-4">
-                                    <Label
-                                        htmlFor="description"
-                                        className="text-right pt-2"
-                                    >
-                                        Description
-                                    </Label>
-                                    <Textarea
-                                        id="description"
-                                        className="col-span-3"
-                                        rows={4}
-                                        value={formData.description}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                description: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </div>
+                                    </FormField>
+                                </FormSection>
                             </div>
-                            <DialogFooter>
+
+                            <FormActions>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -446,9 +431,9 @@ export function CourseManagement() {
                                     )}
                                     {editingCourse
                                         ? "Update Course"
-                                        : "Save Course"}
+                                        : "Create Course"}
                                 </Button>
-                            </DialogFooter>
+                            </FormActions>
                         </form>
                     </DialogContent>
                 </Dialog>

@@ -13,15 +13,7 @@ import {
 } from "@/hooks/use-profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModalWrapper } from "@/components/ui/modal-wrapper";
+import { FormSection, FormField, FormGrid, FormActions } from "@/components/ui/form-layout";
 
 interface UserProfileProps {
   isOpen: boolean;
@@ -130,209 +124,209 @@ export function UserProfile({ isOpen, onClose }: UserProfileProps) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5" />
-            User Profile
-          </DialogTitle>
-          <DialogDescription>
-            View and update your profile information
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Profile Completion Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Profile Completion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Profile Completion</span>
-                  <span>{profileCompletion}%</span>
-                </div>
-                <Progress value={profileCompletion} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Avatar Section */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-20 w-20">
-                {currentUser.avatar ? (
-                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                ) : (
-                  <AvatarFallback className="text-lg">
-                    {currentUser.name?.charAt(0)?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                )}
-                {uploadAvatarMutation.isPending && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </Avatar>
-              <label
-                htmlFor="avatar-upload"
-                className={`absolute -bottom-1 -right-1 p-1 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors ${
-                  uploadAvatarMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <Upload className="h-3 w-3" />
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  disabled={uploadAvatarMutation.isPending}
-                />
-              </label>
+    <ModalWrapper
+      isOpen={isOpen}
+      onClose={onClose}
+      title="User Profile"
+      description="View and update your profile information"
+      size="lg"
+    >
+      {/* Profile Completion Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Profile Completion</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span>Profile Completion</span>
+              <span className="font-medium">{profileCompletion}%</span>
             </div>
-            <div>
-              <h3 className="font-medium">{currentUser.name ?? "User"}</h3>
-              <p className="text-sm text-muted-foreground">{currentUser.email ?? "No email"}</p>
-              <p className="text-sm text-muted-foreground">
-                Level {currentUser.level ?? "N/A"} • Semester {currentUser.currentSemester ?? "N/A"}
-              </p>
-              {uploadAvatarMutation.isPending && (
-                <p className="text-xs text-blue-600 font-medium mt-1">
-                  Uploading avatar...
-                </p>
-              )}
-            </div>
+            <Progress value={profileCompletion} className="h-2" />
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Profile Form */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Profile Information</h3>
-              {!isEditing ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
+      {/* Avatar Section */}
+      <FormSection
+        title="Profile Picture"
+        description="Update your profile picture"
+      >
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <Avatar className="h-20 w-20">
+              {currentUser.avatar ? (
+                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
               ) : (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    className="flex items-center gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveProfile}
-                    disabled={updateProfileMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save
-                  </Button>
+                <AvatarFallback className="text-lg">
+                  {currentUser.name?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              )}
+              {uploadAvatarMutation.isPending && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={isEditing ? formData.name : (currentUser.name ?? "")}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={isEditing ? formData.email : (currentUser.email ?? "")}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="matricNumber">Matric Number</Label>
-                <Input
-                  id="matricNumber"
-                  value={isEditing ? formData.matricNumber : (currentUser.matricNumber ?? "")}
-                  onChange={(e) => handleInputChange("matricNumber", e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="faculty">Faculty</Label>
-                <Input value={currentUser.faculty ?? ""} disabled />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Input value={currentUser.department ?? ""} disabled />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="level">Level</Label>
-                {isEditing ? (
-                  <Select
-                    value={formData.level.toString()}
-                    onValueChange={(value) => handleInputChange("level", parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="200">200</SelectItem>
-                      <SelectItem value="300">300</SelectItem>
-                      <SelectItem value="400">400</SelectItem>
-                      <SelectItem value="500">500</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input value={(currentUser.level ?? 100).toString()} disabled />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="semester">Current Semester</Label>
-                {isEditing ? (
-                  <Select
-                    value={formData.currentSemester.toString()}
-                    onValueChange={(value) => handleInputChange("currentSemester", parseInt(value) as 1 | 2)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Semester</SelectItem>
-                      <SelectItem value="2">2nd Semester</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input value={`${currentUser.currentSemester ?? 1}${(currentUser.currentSemester ?? 1) === 1 ? 'st' : 'nd'} Semester`} disabled />
-                )}
-              </div>
-            </div>
+            </Avatar>
+            <label
+              htmlFor="avatar-upload"
+              className={`absolute -bottom-1 -right-1 p-1.5 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90 transition-colors ${
+                uploadAvatarMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <Upload className="h-3 w-3" />
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                disabled={uploadAvatarMutation.isPending}
+              />
+            </label>
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-medium text-lg">{currentUser.name ?? "User"}</h3>
+            <p className="text-sm text-muted-foreground">{currentUser.email ?? "No email"}</p>
+            <p className="text-sm text-muted-foreground">
+              Level {currentUser.level ?? "N/A"} • Semester {currentUser.currentSemester ?? "N/A"}
+            </p>
+            {uploadAvatarMutation.isPending && (
+              <p className="text-xs text-blue-600 font-medium">
+                Uploading avatar...
+              </p>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </FormSection>
+
+      {/* Profile Form */}
+      <FormSection
+        title="Profile Information"
+        description={isEditing ? "Update your profile details" : "Your current profile information"}
+      >
+        <div className="flex justify-end mb-4">
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          ) : (
+            <FormActions>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveProfile}
+                disabled={updateProfileMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </FormActions>
+          )}
+        </div>
+
+        <FormGrid columns={2}>
+          <FormField label="Full Name" required>
+            <Input
+              value={isEditing ? formData.name : (currentUser.name ?? "")}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              disabled={!isEditing}
+              placeholder="Enter your full name"
+            />
+          </FormField>
+
+          <FormField label="Email Address" required>
+            <Input
+              type="email"
+              value={isEditing ? formData.email : (currentUser.email ?? "")}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              disabled={!isEditing}
+              placeholder="Enter your email"
+            />
+          </FormField>
+
+          <FormField label="Matric Number" required>
+            <Input
+              value={isEditing ? formData.matricNumber : (currentUser.matricNumber ?? "")}
+              onChange={(e) => handleInputChange("matricNumber", e.target.value)}
+              disabled={!isEditing}
+              placeholder="Enter your matric number"
+            />
+          </FormField>
+
+          <FormField label="Faculty">
+            <Input
+              value={currentUser.faculty ?? ""}
+              disabled
+              placeholder="Faculty not set"
+            />
+          </FormField>
+
+          <FormField label="Department">
+            <Input
+              value={currentUser.department ?? ""}
+              disabled
+              placeholder="Department not set"
+            />
+          </FormField>
+
+          <FormField label="Academic Level" required>
+            {isEditing ? (
+              <Select
+                value={formData.level.toString()}
+                onValueChange={(value) => handleInputChange("level", parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="100">100 Level</SelectItem>
+                  <SelectItem value="200">200 Level</SelectItem>
+                  <SelectItem value="300">300 Level</SelectItem>
+                  <SelectItem value="400">400 Level</SelectItem>
+                  <SelectItem value="500">500 Level</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={`${currentUser.level ?? 100} Level`} disabled />
+            )}
+          </FormField>
+
+          <FormField label="Current Semester" required>
+            {isEditing ? (
+              <Select
+                value={formData.currentSemester.toString()}
+                onValueChange={(value) => handleInputChange("currentSemester", parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1st Semester</SelectItem>
+                  <SelectItem value="2">2nd Semester</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={`${currentUser.currentSemester ?? 1}${(currentUser.currentSemester ?? 1) === 1 ? 'st' : 'nd'} Semester`} disabled />
+            )}
+          </FormField>
+        </FormGrid>
+      </FormSection>
+    </ModalWrapper>
   );
 }

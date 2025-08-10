@@ -4,51 +4,87 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ModalWrapper } from "@/components/ui/modal-wrapper";
+import {
+    FormSection,
+    FormField,
+    FormGrid,
+    FormActions,
+} from "@/components/ui/form-layout";
 import { useAppContext } from "@/context/app-context";
 import { useCourses } from "@/hooks/use-courses";
 import {
-  useCurrentUserTimetableBySemester,
-  useAddTimetableEntry,
-  useUpdateTimetableEntry,
-  useDeleteTimetableEntry,
-  TimetableEntryInput
+    useCurrentUserTimetableBySemester,
+    useAddTimetableEntry,
+    useUpdateTimetableEntry,
+    useDeleteTimetableEntry,
+    TimetableEntryInput,
 } from "@/hooks/use-timetable";
 import type { TimetableEntry } from "@/types";
 
 const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday"
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
 ];
 
 const TIME_SLOTS = [
-  "8:00 AM - 9:00 AM",
-  "9:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "12:00 PM - 1:00 PM",
-  "1:00 PM - 2:00 PM",
-  "2:00 PM - 3:00 PM",
-  "3:00 PM - 4:00 PM",
-  "4:00 PM - 5:00 PM",
-  "5:00 PM - 6:00 PM"
+    "8:00 AM - 9:00 AM",
+    "9:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "12:00 PM - 1:00 PM",
+    "1:00 PM - 2:00 PM",
+    "2:00 PM - 3:00 PM",
+    "3:00 PM - 4:00 PM",
+    "4:00 PM - 5:00 PM",
+    "5:00 PM - 6:00 PM",
 ];
 
 interface TimetableFormData {
-  day: string;
-  time: string;
-  location: string;
-  courseId: string;
+    day: string;
+    time: string;
+    location: string;
+    courseId: string;
 }
 
 export function TimetableView() {
@@ -273,126 +309,116 @@ export function TimetableView() {
                                               } semester timetable.`}
                                     </DialogDescription>
                                 </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="course"
-                                            className="text-right"
-                                        >
-                                            Course *
-                                        </Label>
-                                        <Select
-                                            value={formData.courseId}
-                                            onValueChange={(value) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    courseId: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select course" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {availableCourses.map(
-                                                    (course) => (
-                                                        <SelectItem
-                                                            key={course.id}
-                                                            value={course.id}
-                                                        >
-                                                            {course.code} -{" "}
-                                                            {course.title}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="day"
-                                            className="text-right"
-                                        >
-                                            Day *
-                                        </Label>
-                                        <Select
-                                            value={formData.day}
-                                            onValueChange={(value) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    day: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select day" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {DAYS_OF_WEEK.map((day) => (
-                                                    <SelectItem
-                                                        key={day}
-                                                        value={day}
-                                                    >
-                                                        {day}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="time"
-                                            className="text-right"
-                                        >
-                                            Time *
-                                        </Label>
-                                        <Select
-                                            value={formData.time}
-                                            onValueChange={(value) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    time: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select time" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {TIME_SLOTS.map((time) => (
-                                                    <SelectItem
-                                                        key={time}
-                                                        value={time}
-                                                    >
-                                                        {time}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="location"
-                                            className="text-right"
-                                        >
-                                            Location *
-                                        </Label>
-                                        <Input
-                                            id="location"
-                                            placeholder="e.g. Room 101, Lab 2"
-                                            className="col-span-3"
-                                            value={formData.location}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    location: e.target.value,
-                                                })
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <DialogFooter>
+
+                                <FormSection>
+                                    <FormGrid columns={1}>
+                                        <FormField label="Course" required>
+                                            <Select
+                                                value={formData.courseId}
+                                                onValueChange={(value) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        courseId: value,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select course" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableCourses.map(
+                                                        (course) => (
+                                                            <SelectItem
+                                                                key={course.id}
+                                                                value={
+                                                                    course.id
+                                                                }
+                                                            >
+                                                                {course.code} -{" "}
+                                                                {course.title}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormField>
+
+                                        <FormGrid columns={2}>
+                                            <FormField label="Day" required>
+                                                <Select
+                                                    value={formData.day}
+                                                    onValueChange={(value) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            day: value,
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select day" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {DAYS_OF_WEEK.map(
+                                                            (day) => (
+                                                                <SelectItem
+                                                                    key={day}
+                                                                    value={day}
+                                                                >
+                                                                    {day}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormField>
+
+                                            <FormField label="Time" required>
+                                                <Select
+                                                    value={formData.time}
+                                                    onValueChange={(value) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            time: value,
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select time" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {TIME_SLOTS.map(
+                                                            (time) => (
+                                                                <SelectItem
+                                                                    key={time}
+                                                                    value={time}
+                                                                >
+                                                                    {time}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormField>
+                                        </FormGrid>
+
+                                        <FormField label="Location" required>
+                                            <Input
+                                                placeholder="e.g. Room 101, Lab 2"
+                                                value={formData.location}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        location:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </FormField>
+                                    </FormGrid>
+                                </FormSection>
+
+                                <FormActions>
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -411,7 +437,7 @@ export function TimetableView() {
                                             ? "Update Class"
                                             : "Add Class"}
                                     </Button>
-                                </DialogFooter>
+                                </FormActions>
                             </form>
                         </DialogContent>
                     </Dialog>

@@ -65,6 +65,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { ModalWrapper } from "@/components/ui/modal-wrapper";
+import {
+    FormSection,
+    FormField,
+    FormGrid,
+    FormActions,
+} from "@/components/ui/form-layout";
+import { FileUploadZone, FilePreview } from "@/components/ui/file-upload-zone";
 import FileUploader from "../file-uploader";
 import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
@@ -380,165 +388,169 @@ export function ContentManagement() {
                                 Upload Content
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px] md:max-w-[600px]">
+                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                             <form onSubmit={handleSubmit}>
                                 <DialogHeader>
-                                    <DialogTitle>Upload Content</DialogTitle>
+                                    <DialogTitle className="text-xl font-semibold">
+                                        Upload Content
+                                    </DialogTitle>
                                     <DialogDescription>
                                         Upload new course materials or past
-                                        questions.
+                                        questions to the platform.
                                     </DialogDescription>
                                 </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="contentType"
-                                            className="text-right"
-                                        >
-                                            Content Type
-                                        </Label>
-                                        <Select
-                                            value={formData.type || undefined}
-                                            onValueChange={(value) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    type: value,
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger className="col-span-3">
-                                                <SelectValue placeholder="Select type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {[
-                                                    "material",
-                                                    "pastQuestion",
-                                                ].map((type) => (
-                                                    <SelectItem
-                                                        key={type}
-                                                        value={type}
+
+                                <div className="space-y-6">
+                                    <FormSection title="Content Details">
+                                        <FormGrid columns={1}>
+                                            <FormField
+                                                label="Content Type"
+                                                required
+                                            >
+                                                <Select
+                                                    value={
+                                                        formData.type ||
+                                                        undefined
+                                                    }
+                                                    onValueChange={(value) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            type: value,
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select content type" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="material">
+                                                            Course Material
+                                                        </SelectItem>
+                                                        <SelectItem value="pastQuestion">
+                                                            Past Question
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormField>
+
+                                            <FormField label="Course" required>
+                                                <div className="flex gap-3">
+                                                    <Select
+                                                        value={
+                                                            formData.courseId ||
+                                                            undefined
+                                                        }
+                                                        onValueChange={(
+                                                            value
+                                                        ) =>
+                                                            setFormData({
+                                                                ...formData,
+                                                                courseId: value,
+                                                            })
+                                                        }
                                                     >
-                                                        {type === "material"
-                                                            ? "Course Material"
-                                                            : "Past Question"}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="course"
-                                            className="text-right"
-                                        >
-                                            Course
-                                        </Label>
-                                        <div className="col-span-3 flex gap-2">
-                                            <Select
-                                                value={
-                                                    formData.courseId ||
-                                                    undefined
-                                                }
-                                                onValueChange={(value) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        courseId: value,
-                                                    })
-                                                }
+                                                        <SelectTrigger className="flex-1">
+                                                            <SelectValue placeholder="Select course" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {coursesLoading ? (
+                                                                <SelectItem
+                                                                    value="loading"
+                                                                    disabled
+                                                                >
+                                                                    Loading
+                                                                    courses...
+                                                                </SelectItem>
+                                                            ) : coursesError ? (
+                                                                <SelectItem
+                                                                    value="error"
+                                                                    disabled
+                                                                >
+                                                                    Error
+                                                                    loading
+                                                                    courses
+                                                                </SelectItem>
+                                                            ) : courses.length ===
+                                                              0 ? (
+                                                                <SelectItem
+                                                                    value="no-courses"
+                                                                    disabled
+                                                                >
+                                                                    No courses
+                                                                    available
+                                                                </SelectItem>
+                                                            ) : (
+                                                                courses.map(
+                                                                    (
+                                                                        course
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                course.id
+                                                                            }
+                                                                            value={
+                                                                                course.id
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                course.code
+                                                                            }{" "}
+                                                                            -{" "}
+                                                                            {
+                                                                                course.title
+                                                                            }
+                                                                        </SelectItem>
+                                                                    )
+                                                                )
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            refetchCourses()
+                                                        }
+                                                        disabled={
+                                                            coursesLoading
+                                                        }
+                                                    >
+                                                        {coursesLoading ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            "Refresh"
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </FormField>
+
+                                            <FormField
+                                                label="Title"
+                                                required
+                                                hint="Provide a descriptive title for the content"
                                             >
-                                                <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder="Select course" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {coursesLoading ? (
-                                                        <SelectItem
-                                                            value="loading"
-                                                            disabled
-                                                        >
-                                                            Loading courses...
-                                                        </SelectItem>
-                                                    ) : coursesError ? (
-                                                        <SelectItem
-                                                            value="error"
-                                                            disabled
-                                                        >
-                                                            Error loading
-                                                            courses
-                                                        </SelectItem>
-                                                    ) : courses.length === 0 ? (
-                                                        <SelectItem
-                                                            value="no-courses"
-                                                            disabled
-                                                        >
-                                                            No courses available
-                                                        </SelectItem>
-                                                    ) : (
-                                                        courses.map(
-                                                            (course) => {
-                                                                return (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            course.id
-                                                                        }
-                                                                        value={
-                                                                            course.id
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            course.code
-                                                                        }{" "}
-                                                                        -{" "}
-                                                                        {
-                                                                            course.title
-                                                                        }
-                                                                    </SelectItem>
-                                                                );
-                                                            }
-                                                        )
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => refetchCourses()}
-                                                disabled={coursesLoading}
-                                                className="whitespace-nowrap"
-                                            >
-                                                {coursesLoading ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    "Refresh"
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label
-                                            htmlFor="title"
-                                            className="text-right"
-                                        >
-                                            Title
-                                        </Label>
-                                        <Input
-                                            id="title"
-                                            className="col-span-3"
-                                            value={formData.title}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    title: e.target.value,
-                                                })
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <div className="col-span-2 text-sm">
-                                            Upload File
-                                        </div>
-                                        <div className="col-span-3">
+                                                <Input
+                                                    value={formData.title}
+                                                    onChange={(e) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            title: e.target
+                                                                .value,
+                                                        })
+                                                    }
+                                                    placeholder="Enter content title"
+                                                    required
+                                                />
+                                            </FormField>
+                                        </FormGrid>
+                                    </FormSection>
+
+                                    <FormSection
+                                        title="File Upload"
+                                        description="Select a PDF file to upload"
+                                    >
+                                        <div className="space-y-3">
                                             <FileUploader
                                                 uploadPreset="amatech-materials-and-pqs"
                                                 accept="application/pdf"
@@ -548,18 +560,43 @@ export function ContentManagement() {
                                                 autoUpload={false}
                                             />
                                             {materialUpload.selectedFile && (
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Selected:{" "}
-                                                    {
-                                                        materialUpload
-                                                            .selectedFile.name
-                                                    }
-                                                </p>
+                                                <div className="p-3 rounded-lg border bg-muted/50">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="text-sm font-medium">
+                                                            {
+                                                                materialUpload
+                                                                    .selectedFile
+                                                                    .name
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {(
+                                                            materialUpload
+                                                                .selectedFile
+                                                                .size /
+                                                            1024 /
+                                                            1024
+                                                        ).toFixed(2)}{" "}
+                                                        MB
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
+                                    </FormSection>
                                 </div>
-                                <DialogFooter>
+
+                                <FormActions>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setIsUploadDialogOpen(false)
+                                        }
+                                    >
+                                        Cancel
+                                    </Button>
                                     <Button
                                         type="submit"
                                         disabled={
@@ -574,14 +611,13 @@ export function ContentManagement() {
                                             materialUpload.isUploading) && (
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         )}
-
                                         {uploadMaterialMutation.isPending ||
                                         uploadPastQuestionMutation.isPending ||
                                         materialUpload.isUploading
                                             ? "Uploading..."
-                                            : "Upload"}
+                                            : "Upload Content"}
                                     </Button>
-                                </DialogFooter>
+                                </FormActions>
                             </form>
                         </DialogContent>
                     </Dialog>

@@ -1,0 +1,164 @@
+/* Reactour custom styles */
+
+/* Tour mask styling */
+.tour-mask {
+  z-index: 9998 !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Tour helper (tooltip) styling */
+.tour-helper {
+  z-index: 9999 !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  padding: 20px !important;
+  max-width: 350px !important;
+  font-family: inherit !important;
+}
+
+/* Tour highlight styling */
+.tour-highlight {
+  animation: reactour-pulse 2s ease-out infinite !important;
+  border-radius: 8px !important;
+}
+
+@keyframes reactour-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .tour-helper {
+    max-width: calc(100vw - 40px) !important;
+    margin: 20px !important;
+    padding: 16px !important;
+  }
+
+  .tour-helper h3 {
+    font-size: 14px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .tour-helper p {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Ensure tour buttons are properly sized on mobile */
+  .tour-helper button {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    min-width: 60px !important;
+  }
+}
+
+/* Custom button styling */
+.tour-helper button {
+  border: none !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  border-radius: 6px !important;
+}
+
+.tour-helper button:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5) !important;
+  outline-offset: 2px !important;
+}
+
+/* Close button styling */
+.tour-helper [aria-label="Close"] {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 18px !important;
+  color: #6b7280 !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  transition: color 0.2s ease !important;
+}
+
+.tour-helper [aria-label="Close"]:hover {
+  color: #374151 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Navigation dots styling */
+.tour-helper nav {
+  margin: 16px 0 !important;
+}
+
+.tour-helper nav button {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #d1d5db !important;
+  margin: 0 4px !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.tour-helper nav button.is-current {
+  background: #3b82f6 !important;
+}
+
+/* Badge (step counter) styling */
+.tour-helper .tour-badge {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  display: block !important;
+}
+
+/* Ensure proper z-index for tour elements */
+[data-tour]:not([data-tour=""]) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tour element highlighting on hover (optional) */
+[data-tour]:not([data-tour=""]):hover {
+  outline: 2px solid rgba(59, 130, 246, 0.3);
+  outline-offset: 2px;
+  border-radius: 4px;
+  transition: outline 0.2s ease;
+}
+
+/* Smooth transitions for tour animations */
+.tour-helper,
+.tour-mask {
+  transition: opacity 0.3s ease !important;
+}
+
+/* Ensure content in tour helper is properly styled */
+.tour-helper h3 {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  margin: 0 0 8px 0 !important;
+  font-size: 16px !important;
+}
+
+.tour-helper p {
+  color: #374151 !important;
+  margin: 0 !important;
+  line-height: 1.5 !important;
+  font-size: 14px !important;
+}
+
+/* Fix for any potential conflicts with existing styles */
+.tour-helper * {
+  box-sizing: border-box !important;
+}
