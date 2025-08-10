@@ -5,12 +5,13 @@ import type { User } from "@/types";
 
 // Types for profile updates
 export type ProfileUpdateData = {
-  name: string;
-  email: string;
-  matricNumber: string;
-  level: number;
-  currentSemester: 1 | 2;
-  // Note: department and faculty are excluded as they can't be edited
+    firstname: string;
+    lastname: string;
+    email: string;
+    matricNumber: string;
+    level: number;
+    currentSemester: 1 | 2;
+    // Note: department and faculty are excluded as they can't be edited
 };
 
 export type AvatarUpdateData = {
