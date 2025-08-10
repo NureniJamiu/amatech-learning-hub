@@ -85,7 +85,7 @@ export default function LandingPage() {
         <div className="min-h-screen bg-white">
             {/* Navigation */}
             <motion.nav
-                className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 h-16"
+                className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 h-20"
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
@@ -119,7 +119,7 @@ export default function LandingPage() {
                                         <Link href="/dashboard">
                                             <AnimatedButton
                                                 size="lg"
-                                                className="px-8 py-3 text-lg"
+                                                className="px-8 py-5 text-lg"
                                             >
                                                 Go to Dashboard
                                             </AnimatedButton>
@@ -130,7 +130,7 @@ export default function LandingPage() {
                                                 <AnimatedButton
                                                     variant="ghost"
                                                     size="lg"
-                                                    className="px-8 py-3 text-lg"
+                                                    className="text-green-800 px-8 py-5 text-lg"
                                                 >
                                                     Sign In
                                                 </AnimatedButton>
@@ -138,7 +138,7 @@ export default function LandingPage() {
                                             <Link href="/signup">
                                                 <AnimatedButton
                                                     size="lg"
-                                                    className="px-8 py-3 text-lg"
+                                                    className="px-8 py-5 text-lg"
                                                 >
                                                     Get Started
                                                 </AnimatedButton>
@@ -207,7 +207,7 @@ export default function LandingPage() {
                                         >
                                             <AnimatedButton
                                                 size="lg"
-                                                className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                             >
                                                 Go to Dashboard
                                             </AnimatedButton>
@@ -220,7 +220,7 @@ export default function LandingPage() {
                                             >
                                                 <AnimatedButton
                                                     size="lg"
-                                                    className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
                                                     Join fellow students
                                                 </AnimatedButton>
@@ -232,9 +232,9 @@ export default function LandingPage() {
                                                 <AnimatedButton
                                                     variant="outline"
                                                     size="lg"
-                                                    className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    className="text-green-800 text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
-                                                    Student login
+                                                    Login now
                                                 </AnimatedButton>
                                             </Link>
                                         </>
@@ -731,7 +731,7 @@ export default function LandingPage() {
                                         >
                                             <AnimatedButton
                                                 size="lg"
-                                                className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                             >
                                                 Go to Dashboard
                                             </AnimatedButton>
@@ -744,9 +744,9 @@ export default function LandingPage() {
                                             >
                                                 <AnimatedButton
                                                     size="lg"
-                                                    className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
-                                                    Join AMATECH Hub Now
+                                                    Join fellow students
                                                 </AnimatedButton>
                                             </Link>
                                             <Link
@@ -756,9 +756,9 @@ export default function LandingPage() {
                                                 <AnimatedButton
                                                     size="lg"
                                                     variant="outline"
-                                                    className="text-lg px-8 py-3 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    className="text-green-800 text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
-                                                    Student Login
+                                                    Login now
                                                 </AnimatedButton>
                                             </Link>
                                         </>
