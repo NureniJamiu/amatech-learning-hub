@@ -93,11 +93,12 @@ export async function middleware(request: NextRequest) {
         return response;
     }
 
-    // If user is authenticated and trying to access login page, redirect to dashboard
+    // If user is authenticated and trying to access auth pages, redirect to dashboard
     // But only if the request is not coming from a redirect to prevent loops
     if (
-        pathname === "/login" &&
+        (pathname === "/login" || pathname === "/signup") &&
         !referer?.includes("/login") &&
+        !referer?.includes("/signup") &&
         redirectCount < 2
     ) {
         const response = NextResponse.redirect(

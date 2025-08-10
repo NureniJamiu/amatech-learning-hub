@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
+import { useIsAuthenticated } from "@/hooks/use-auth";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,9 @@ export default function LandingPage() {
     const benefitsInView = useInView(benefitsRef, { once: true });
     const testimonialsInView = useInView(testimonialsRef, { once: true });
 
+    // Check authentication status
+    const { isAuthenticated, isLoading } = useIsAuthenticated();
+
     return (
         <div className="min-h-screen bg-white">
             {/* Navigation */}
@@ -109,23 +113,40 @@ export default function LandingPage() {
                         </motion.div>
 
                         <div className="flex items-center space-x-1 sm:space-x-3">
-                            <Link href="/login">
-                                <AnimatedButton
-                                    variant="ghost"
-                                    size="sm"
-                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
-                                >
-                                    Sign In
-                                </AnimatedButton>
-                            </Link>
-                            <Link href="/signup">
-                                <AnimatedButton
-                                    size="sm"
-                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
-                                >
-                                    Get Started
-                                </AnimatedButton>
-                            </Link>
+                            {!isLoading && (
+                                <>
+                                    {isAuthenticated ? (
+                                        <Link href="/dashboard">
+                                            <AnimatedButton
+                                                size="sm"
+                                                className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                            >
+                                                Go to Dashboard
+                                            </AnimatedButton>
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <Link href="/login">
+                                                <AnimatedButton
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                                >
+                                                    Sign In
+                                                </AnimatedButton>
+                                            </Link>
+                                            <Link href="/signup">
+                                                <AnimatedButton
+                                                    size="sm"
+                                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                                >
+                                                    Get Started
+                                                </AnimatedButton>
+                                            </Link>
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -177,23 +198,49 @@ export default function LandingPage() {
                             className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4"
                             variants={fadeInUp}
                         >
-                            <Link href="/signup" className="w-full sm:w-auto">
-                                <AnimatedButton
-                                    size="lg"
-                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
-                                >
-                                    Join fellow students
-                                </AnimatedButton>
-                            </Link>
-                            <Link href="/login" className="w-full sm:w-auto">
-                                <AnimatedButton
-                                    variant="outline"
-                                    size="lg"
-                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
-                                >
-                                    Student login
-                                </AnimatedButton>
-                            </Link>
+                            {!isLoading && (
+                                <>
+                                    {isAuthenticated ? (
+                                        <Link
+                                            href="/dashboard"
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <AnimatedButton
+                                                size="lg"
+                                                className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                            >
+                                                Go to Dashboard
+                                            </AnimatedButton>
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <Link
+                                                href="/signup"
+                                                className="w-full sm:w-auto"
+                                            >
+                                                <AnimatedButton
+                                                    size="lg"
+                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                >
+                                                    Join fellow students
+                                                </AnimatedButton>
+                                            </Link>
+                                            <Link
+                                                href="/login"
+                                                className="w-full sm:w-auto"
+                                            >
+                                                <AnimatedButton
+                                                    variant="outline"
+                                                    size="lg"
+                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                >
+                                                    Student login
+                                                </AnimatedButton>
+                                            </Link>
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </motion.div>
 
                         <motion.div
@@ -697,23 +744,49 @@ export default function LandingPage() {
                             State University PMT students.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
-                            <Link href="/signup" className="w-full sm:w-auto">
-                                <AnimatedButton
-                                    size="lg"
-                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
-                                >
-                                    Join AMATECH Hub Now
-                                </AnimatedButton>
-                            </Link>
-                            <Link href="/contact" className="w-full sm:w-auto">
-                                <AnimatedButton
-                                    size="lg"
-                                    variant="outline"
-                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
-                                >
-                                    Student Login
-                                </AnimatedButton>
-                            </Link>
+                            {!isLoading && (
+                                <>
+                                    {isAuthenticated ? (
+                                        <Link
+                                            href="/dashboard"
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <AnimatedButton
+                                                size="lg"
+                                                className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                            >
+                                                Go to Dashboard
+                                            </AnimatedButton>
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <Link
+                                                href="/signup"
+                                                className="w-full sm:w-auto"
+                                            >
+                                                <AnimatedButton
+                                                    size="lg"
+                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                >
+                                                    Join AMATECH Hub Now
+                                                </AnimatedButton>
+                                            </Link>
+                                            <Link
+                                                href="/login"
+                                                className="w-full sm:w-auto"
+                                            >
+                                                <AnimatedButton
+                                                    size="lg"
+                                                    variant="outline"
+                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                >
+                                                    Student Login
+                                                </AnimatedButton>
+                                            </Link>
+                                        </>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </motion.div>
                 </div>

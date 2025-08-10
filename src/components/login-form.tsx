@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLogin, userStorage } from "@/hooks/use-auth";
 import { cookieUtils } from "@/utils/cookies";
+import { redirectIfAuthenticated } from "@/utils/auth-utils";
 import Link from "next/link";
 import { toast } from "react-toastify";
 
@@ -88,6 +89,11 @@ export function LoginForm({
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        redirectIfAuthenticated();
+    }, []);
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>

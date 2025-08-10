@@ -50,19 +50,7 @@ export function SignupForm({
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const router = useRouter();
-    const {
-        mutate: register,
-        isPending,
-        error: registerError,
-    } = useRegister({
-        onSuccess: () => {
-            toast.success("Signup successful! Welcome to Amatech Lasu.");
-            router.push("/dashboard");
-        },
-        onError: (err: any) => {
-            toast.error(err?.message || "Signup failed. Please try again.");
-        },
-    });
+    const { mutate: register, isPending, error: registerError } = useRegister();
 
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
@@ -94,13 +82,31 @@ export function SignupForm({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            register({
-                firstname: formData.firstname,
-                lastname: formData.lastname,
-                email: formData.email,
-                password: formData.password,
-                level: formData.level,
-            });
+            register(
+                {
+                    name: `${formData.firstname} ${formData.lastname}`.trim(),
+                    email: formData.email,
+                    password: formData.password,
+                    passwordConfirmation: formData.passwordConfirmation,
+                    matricNumber: "",
+                    level: parseInt(formData.level),
+                    department: "",
+                    faculty: "",
+                },
+                {
+                    onSuccess: () => {
+                        toast.success(
+                            "Signup successful! Welcome to Amatech Lasu."
+                        );
+                        router.push("/dashboard");
+                    },
+                    onError: (err: any) => {
+                        toast.error(
+                            err?.message || "Signup failed. Please try again."
+                        );
+                    },
+                }
+            );
         }
     };
 
