@@ -112,14 +112,14 @@ export default function LandingPage() {
                             </span>
                         </motion.div>
 
-                        <div className="flex items-center space-x-1 sm:space-x-3">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                             {!isLoading && (
                                 <>
                                     {isAuthenticated ? (
                                         <Link href="/dashboard">
                                             <AnimatedButton
-                                                size="sm"
-                                                className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                                size="default"
+                                                className="px-5 py-2 text-base"
                                             >
                                                 Go to Dashboard
                                             </AnimatedButton>
@@ -129,16 +129,16 @@ export default function LandingPage() {
                                             <Link href="/login">
                                                 <AnimatedButton
                                                     variant="ghost"
-                                                    size="sm"
-                                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                                    size="default"
+                                                    className="px-5 py-2 text-base"
                                                 >
                                                     Sign In
                                                 </AnimatedButton>
                                             </Link>
                                             <Link href="/signup">
                                                 <AnimatedButton
-                                                    size="sm"
-                                                    className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base"
+                                                    size="default"
+                                                    className="px-5 py-2 text-base"
                                                 >
                                                     Get Started
                                                 </AnimatedButton>
@@ -206,8 +206,8 @@ export default function LandingPage() {
                                             className="w-full sm:w-auto"
                                         >
                                             <AnimatedButton
-                                                size="lg"
-                                                className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                size="default"
+                                                className="text-base px-5 py-2 w-full sm:w-auto inline-flex items-center justify-center"
                                             >
                                                 Go to Dashboard
                                             </AnimatedButton>
@@ -219,8 +219,8 @@ export default function LandingPage() {
                                                 className="w-full sm:w-auto"
                                             >
                                                 <AnimatedButton
-                                                    size="lg"
-                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    size="default"
+                                                    className="text-base px-5 py-2 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
                                                     Join fellow students
                                                 </AnimatedButton>
@@ -231,8 +231,8 @@ export default function LandingPage() {
                                             >
                                                 <AnimatedButton
                                                     variant="outline"
-                                                    size="lg"
-                                                    className="text-base sm:text-lg p-6 sm:p-8 w-full sm:w-auto inline-flex items-center justify-center"
+                                                    size="default"
+                                                    className="text-base px-5 py-2 w-full sm:w-auto inline-flex items-center justify-center"
                                                 >
                                                     Student login
                                                 </AnimatedButton>
@@ -664,44 +664,22 @@ export default function LandingPage() {
                             <motion.div
                                 key={index}
                                 variants={slideInFromRight}
-                                whileHover={{ y: -8, rotateY: 5 }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 400,
-                                    damping: 25,
-                                }}
+                                whileHover={{ y: -2 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 40 }}
                             >
-                                <Card className="border-0 shadow-lg h-full">
+                                <Card className="border-0 shadow h-full">
                                     <CardContent className="p-8">
                                         <div className="space-y-6">
-                                            <motion.div
-                                                whileHover={{
-                                                    scale: 1.1,
-                                                    rotate: 15,
-                                                }}
-                                                transition={{ duration: 0.3 }}
-                                            >
-                                                <Quote className="h-10 w-10 text-primary" />
-                                            </motion.div>
+                                            <Quote className="h-10 w-10 text-primary mb-2" />
                                             <p className="text-gray-600 text-lg leading-relaxed">
                                                 {testimonial.quote}
                                             </p>
                                             <div className="flex items-center space-x-4">
-                                                <motion.div
-                                                    className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center"
-                                                    whileHover={{
-                                                        scale: 1.1,
-                                                        backgroundColor:
-                                                            "rgba(34, 197, 94, 0.2)",
-                                                    }}
-                                                    transition={{
-                                                        duration: 0.3,
-                                                    }}
-                                                >
+                                                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                                                     <span className="text-primary font-semibold">
                                                         {testimonial.initials}
                                                     </span>
-                                                </motion.div>
+                                                </div>
                                                 <div>
                                                     <div className="font-semibold text-gray-900 text-lg">
                                                         {testimonial.name}
@@ -721,11 +699,7 @@ export default function LandingPage() {
             </section>
 
             {/* CTA Section */}
-            <section className="py-16 sm:py-20 relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-                <div className="absolute inset-0">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(34,197,94,0.1),transparent_50%)]"></div>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1),transparent_50%)]"></div>
-                </div>
+            <section className="py-16 sm:py-20 bg-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <motion.div
                         className="space-y-6 sm:space-y-8"
