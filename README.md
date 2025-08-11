@@ -16,7 +16,7 @@
 
 ## 🖼️ Project Preview
 
-![ScreenForge Homepage](./public/images/homepage.png)
+![Amalearn Homepage](./public/images/homepage.png)
 
 ## 🎯 Mission
 
