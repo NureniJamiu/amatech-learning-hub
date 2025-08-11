@@ -48,8 +48,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader className="border-b pb-2">
                 <div className="flex items-center gap-2 px-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500 text-white shrink-0">
-                        <GraduationCap className="h-4 w-4" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shrink-0">
+                        <img
+                            src="/images/logo.png"
+                            alt="Amatech Logo"
+                            className="h-10 w-10 object-contain"
+                        />
                     </div>
                     <div
                         className={`flex flex-col transition-all duration-200 ease-in-out ${
@@ -59,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         }`}
                     >
                         <span className="font-semibold whitespace-nowrap">
-                            Amatech Lasu
+                            AmaLearn
                         </span>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                             Student Learning Hub
