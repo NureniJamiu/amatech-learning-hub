@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://amatech-learning-hub.com/sitemap.xml
