@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Head from "next/head";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AnimatedButton } from "@/components/ui/animated-button";
@@ -82,75 +83,85 @@ export default function LandingPage() {
     const { isAuthenticated, isLoading } = useIsAuthenticated();
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Navigation */}
-            <motion.nav
-                className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 h-20"
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-            >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                    <div className="flex justify-between items-center h-full">
-                        <motion.div
-                            className="flex items-center space-x-2"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 25,
-                            }}
-                        >
+        <>
+            <Head>
+                <title>Amatech Learning Hub</title>
+                <meta name="description" content="Empowering Project Management Technology students at Lagos State University." />
+                <meta name="keywords" content="Project Management, Technology, AMATECH, Lagos State University" />
+                <meta name="author" content="AMATECH Hub" />
+                <meta property="og:title" content="Amatech Learning Hub" />
+                <meta property="og:description" content="Empowering Project Management Technology students at Lagos State University." />
+                <meta property="og:image" content="/images/logo.png" />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://amatech-learning-hub.com" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content="Amatech Learning Hub" />
+                <meta name="twitter:description" content="Empowering Project Management Technology students at Lagos State University." />
+                <meta name="twitter:image" content="/images/logo.png" />
+            </Head>
+            <div className="min-h-screen bg-white">
+                {/* Navigation */}
+                <motion.nav
+                    className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 h-20"
+                    initial={{ y: -100 }}
+                    animate={{ y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+                        <div className="flex justify-between items-center h-full">
                             <motion.div
-                                whileHover={{ rotate: 360 }}
-                                transition={{ duration: 0.6 }}
+                                className="flex items-center space-x-2"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 25,
+                                }}
                             >
-                                <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                                <Image src="/images/logo.png" alt="Amatech Learning Hub Logo" width={40} height={40} priority />
+                                <span className="font-bold text-lg sm:text-xl text-gray-900">
+                                    AMATECH Hub
+                                </span>
                             </motion.div>
-                            <span className="font-bold text-lg sm:text-xl text-gray-900">
-                                AmaLearn
-                            </span>
-                        </motion.div>
-
-                        <div className="flex items-center space-x-2 sm:space-x-4">
-                            {!isLoading && (
-                                <>
-                                    {isAuthenticated ? (
-                                        <Link href="/dashboard">
-                                            <AnimatedButton
-                                                size="lg"
-                                                className="px-8 py-5 text-lg"
-                                            >
-                                                Go to Dashboard
-                                            </AnimatedButton>
-                                        </Link>
-                                    ) : (
-                                        <>
-                                            <Link href="/login">
-                                                <AnimatedButton
-                                                    variant="ghost"
-                                                    size="lg"
-                                                    className="text-green-800 px-8 py-5 text-lg"
-                                                >
-                                                    Sign In
-                                                </AnimatedButton>
-                                            </Link>
-                                            <Link href="/signup">
+                            <div className="flex items-center space-x-2 sm:space-x-4">
+                                {!isLoading && (
+                                    <>
+                                        {isAuthenticated ? (
+                                            <Link href="/dashboard">
                                                 <AnimatedButton
                                                     size="lg"
                                                     className="px-8 py-5 text-lg"
                                                 >
-                                                    Get Started
+                                                    Go to Dashboard
                                                 </AnimatedButton>
                                             </Link>
-                                        </>
-                                    )}
-                                </>
-                            )}
+                                        ) : (
+                                            <>
+                                                <Link href="/login">
+                                                    <AnimatedButton
+                                                        variant="ghost"
+                                                        size="lg"
+                                                        className="text-green-800 px-8 py-5 text-lg"
+                                                    >
+                                                        Sign In
+                                                    </AnimatedButton>
+                                                </Link>
+                                                <Link href="/signup">
+                                                    <AnimatedButton
+                                                        size="lg"
+                                                        className="px-8 py-5 text-lg"
+                                                    >
+                                                        Get Started
+                                                    </AnimatedButton>
+                                                </Link>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </motion.nav>
+                </motion.nav>
 
             {/* Hero Section */}
             <section className="relative min-h-[calc(100vh-4rem)] flex items-center px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -704,70 +715,71 @@ export default function LandingPage() {
 
             {/* CTA Section */}
             <section className="py-16 sm:py-20 bg-gray-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <motion.div
-                        className="space-y-6 sm:space-y-8"
-                        initial={{ opacity: 0, y: 60 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        viewport={{ once: true }}
-                    >
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
-                            Ready to Excel in Project Management Technology?
-                        </h2>
-                        <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                            Join your fellow AMATECH students who have
-                            streamlined their studies with our centralized
-                            learning platform designed specifically for Lagos
-                            State University PMT students.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
-                            {!isLoading && (
-                                <>
-                                    {isAuthenticated ? (
+                <div className="flex justify-center mb-8">
+                    <Image src="/images/logo.png" alt="Amatech Learning Hub Logo" width={120} height={120} priority />
+                </div>
+                <motion.div
+                    className="space-y-6 sm:space-y-8"
+                    initial={{ opacity: 0, y: 60 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    viewport={{ once: true }}
+                >
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
+                        Ready to Excel in Project Management Technology?
+                    </h2>
+                    <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+                        Join your fellow AMATECH students who have
+                        streamlined their studies with our centralized
+                        learning platform designed specifically for Lagos
+                        State University PMT students.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
+                        {!isLoading && (
+                            <>
+                                {isAuthenticated ? (
+                                    <Link
+                                        href="/dashboard"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <AnimatedButton
+                                            size="lg"
+                                            className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
+                                        >
+                                            Go to Dashboard
+                                        </AnimatedButton>
+                                    </Link>
+                                ) : (
+                                    <>
                                         <Link
-                                            href="/dashboard"
+                                            href="/signup"
                                             className="w-full sm:w-auto"
                                         >
                                             <AnimatedButton
                                                 size="lg"
                                                 className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                             >
-                                                Go to Dashboard
+                                                Join fellow students
                                             </AnimatedButton>
                                         </Link>
-                                    ) : (
-                                        <>
-                                            <Link
-                                                href="/signup"
-                                                className="w-full sm:w-auto"
+                                        <Link
+                                            href="/login"
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <AnimatedButton
+                                                size="lg"
+                                                variant="outline"
+                                                className="text-green-800 text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
                                             >
-                                                <AnimatedButton
-                                                    size="lg"
-                                                    className="text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
-                                                >
-                                                    Join fellow students
-                                                </AnimatedButton>
-                                            </Link>
-                                            <Link
-                                                href="/login"
-                                                className="w-full sm:w-auto"
-                                            >
-                                                <AnimatedButton
-                                                    size="lg"
-                                                    variant="outline"
-                                                    className="text-green-800 text-lg px-8 py-6 w-full sm:w-auto inline-flex items-center justify-center"
-                                                >
-                                                    Login now
-                                                </AnimatedButton>
-                                            </Link>
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
+                                                Login now
+                                            </AnimatedButton>
+                                        </Link>
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </motion.div>
             </section>
 
             {/* Footer */}
@@ -790,12 +802,7 @@ export default function LandingPage() {
                                     damping: 25,
                                 }}
                             >
-                                <motion.div
-                                    whileHover={{ rotate: 360 }}
-                                    transition={{ duration: 0.6 }}
-                                >
-                                    <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                                </motion.div>
+                                <Image src="/images/logo.png" alt="Amatech Learning Hub Logo" width={32} height={32} priority />
                                 <span className="font-bold text-lg sm:text-xl text-gray-900">
                                     AMATECH Hub
                                 </span>
@@ -807,7 +814,7 @@ export default function LandingPage() {
                                 support.
                             </p>
                         </div>
-
+                        {/* ...existing code for footer links... */}
                         {[
                             {
                                 title: "Platform",
@@ -860,7 +867,6 @@ export default function LandingPage() {
                             </div>
                         ))}
                     </motion.div>
-
                     <motion.div
                         className="border-t border-gray-200 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center"
                         initial={{ opacity: 0 }}
@@ -879,6 +885,7 @@ export default function LandingPage() {
                     </motion.div>
                 </div>
             </footer>
-        </div>
+            </div>
+        </>
     );
 }

@@ -24,6 +24,21 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
+                    <head>
+                        <link rel="icon" href="/images/logo.png" type="image/png" />
+                        <meta name="description" content="Amatech Learning Hub - Your gateway to modern learning, resources, and AI-powered assistance." />
+                        <meta name="keywords" content="Amatech, Learning, Hub, Courses, AI, Education, Resources" />
+                        <meta name="author" content="Amatech Team" />
+                        <meta property="og:title" content="Amatech Learning Hub" />
+                        <meta property="og:description" content="Your gateway to modern learning, resources, and AI-powered assistance." />
+                        <meta property="og:image" content="/images/logo.png" />
+                        <meta property="og:type" content="website" />
+                        <meta property="og:url" content="https://amatech-learning-hub.com" />
+                        <meta name="twitter:card" content="summary_large_image" />
+                        <meta name="twitter:title" content="Amatech Learning Hub" />
+                        <meta name="twitter:description" content="Your gateway to modern learning, resources, and AI-powered assistance." />
+                        <meta name="twitter:image" content="/images/logo.png" />
+                    </head>
             <body className={inter.className}>
                 <QueryProvider>
                     {/* <ThemeProvider attribute="class" defaultTheme="light" enableSystem> */}
