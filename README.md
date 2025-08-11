@@ -1,6 +1,22 @@
-# Amatech Learning Hub
+# Amatech Learning Hub - AmaLearn
 
-A comprehensive learning management system developed for the **Association of Management Technology Students (AMATECH)** at Lagos State University. This platform was created by the department's student president to address the challenge of scattered learning resources and enhance the educational experience for Project Management Technology students.
+<div align="center">
+
+[![Live Demo](https://img.shields.io/badge/Live-Demo-green?style=for-the-badge)](https://amatech-nurenijamiu.tech)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+
+**A comprehensive learning management system developed for the Association of Management Technology Students (AMATECH) at Lagos State University. This platform was created by the department's student president to address the challenge of scattered learning resources and enhance the educational experience for Project Management Technology students.**
+
+*Empowering Future Project Managers*
+
+</div>
+
+## 🖼️ Project Preview
+
+![ScreenForge Homepage](./public/images/homepage.png)
 
 ## 🎯 Mission
 
