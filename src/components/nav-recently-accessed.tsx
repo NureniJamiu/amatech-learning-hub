@@ -48,7 +48,7 @@ export function NavRecentlyAccessed() {
     }
 
     return (
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden px-2">
             {state !== "collapsed" && (
                 <SidebarGroupLabel>Recently Accessed</SidebarGroupLabel>
             )}
@@ -59,7 +59,7 @@ export function NavRecentlyAccessed() {
                             <SidebarMenuButton
                                 onClick={() => handleItemClick(item.fileUrl)}
                                 tooltip={`${item.title} - ${item.courseCode}`}
-                                className="h-auto min-h-[2.5rem] px-2 sm:px-3 py-2"
+                                className="h-auto min-h-[2.5rem] px-2 sm:px-3 py-2 rounded-lg hover:bg-green-500/10 transition-colors"
                             >
                                 <div className="flex flex-col items-start w-full gap-0.5 sm:gap-1">
                                     <span className="text-xs sm:text-sm font-medium truncate w-full text-left leading-tight">

@@ -109,19 +109,19 @@ export function AIAssistantView() {
     }, [messages, isTyping]);
 
     return (
-        <div className="flex flex-col lg:flex-row gap-4 p-4 sm:p-6 h-[calc(100vh-8rem)]">
+        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-7rem)] w-full overflow-hidden">
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col min-w-0">
-                <Card className="flex-1 flex flex-col">
-                    <CardHeader className="border-b">
+            <div className="flex-1 flex flex-col min-w-0 h-full">
+                <Card className="flex-1 flex flex-col h-full overflow-hidden">
+                    <CardHeader className="border-b flex-shrink-0">
                         <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-blue-500 to-green-600 rounded-lg">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-md flex-shrink-0">
                                     <Bot className="h-5 w-5 text-white" />
                                 </div>
-                                <div>
-                                    <CardTitle className="text-lg">AI Learning Assistant</CardTitle>
-                                    <CardDescription className="text-xs">
+                                <div className="min-w-0">
+                                    <CardTitle className="text-lg truncate">AI Learning Assistant</CardTitle>
+                                    <CardDescription className="text-xs truncate">
                                         {selectedMaterialData
                                             ? `Chatting about: ${selectedMaterialData.title}`
                                             : "Select a material to start learning"
@@ -129,7 +129,7 @@ export function AIAssistantView() {
                                     </CardDescription>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-shrink-0">
                                 {currentSessionId && (
                                     <Button
                                         variant="outline"
@@ -151,9 +151,9 @@ export function AIAssistantView() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="flex-1 flex flex-col p-0">
+                    <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                         {/* Material Selection */}
-                        <div className="p-4 border-b bg-muted/30">
+                        <div className="p-4 border-b bg-muted/30 flex-shrink-0">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium flex items-center gap-2">
                                     <FileText className="h-4 w-4" />
@@ -198,7 +198,7 @@ export function AIAssistantView() {
                                             {selectedMaterialData.chunksCount} chunks
                                         </Badge>
                                         <span>•</span>
-                                        <span>{selectedMaterialData.course.title}</span>
+                                        <span className="truncate">{selectedMaterialData.course.title}</span>
                                     </div>
                                 )}
                             </div>
@@ -206,7 +206,7 @@ export function AIAssistantView() {
 
                         {/* Warning Alert */}
                         {showNoSelectionWarning && (
-                            <div className="p-4">
+                            <div className="p-4 flex-shrink-0">
                                 <Alert variant="destructive">
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription>
@@ -217,24 +217,25 @@ export function AIAssistantView() {
                         )}
 
                         {/* Messages Area */}
-                        <ScrollArea className="flex-1 p-4">
+                        <ScrollArea className="flex-1 overflow-y-auto">
+                            <div className="p-4">
                             {messages.length === 0 && !selectedMaterial ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                    <div className="p-4 bg-gradient-to-br from-blue-500/10 to-green-600/10 rounded-full mb-4">
-                                        <Sparkles className="h-12 w-12 text-blue-500" />
+                                <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                                    <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-full mb-4">
+                                        <Sparkles className="h-12 w-12 text-green-600" />
                                     </div>
                                     <h3 className="text-lg font-semibold mb-2">Welcome to AI Learning Assistant</h3>
                                     <p className="text-sm text-muted-foreground max-w-md mb-4">
                                         Select a processed material from the dropdown above to start asking questions and get instant help with your studies.
                                     </p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg mt-6">
-                                        <div className="p-3 border rounded-lg text-left">
-                                            <FileText className="h-5 w-5 text-blue-500 mb-2" />
+                                        <div className="p-3 border rounded-lg text-left hover:border-green-500/30 transition-colors">
+                                            <FileText className="h-5 w-5 text-green-600 mb-2" />
                                             <p className="text-xs font-medium">Material-Based Answers</p>
                                             <p className="text-xs text-muted-foreground">Get responses based on your uploaded course materials</p>
                                         </div>
-                                        <div className="p-3 border rounded-lg text-left">
-                                            <BookOpen className="h-5 w-5 text-green-500 mb-2" />
+                                        <div className="p-3 border rounded-lg text-left hover:border-green-500/30 transition-colors">
+                                            <BookOpen className="h-5 w-5 text-green-600 mb-2" />
                                             <p className="text-xs font-medium">Source Citations</p>
                                             <p className="text-xs text-muted-foreground">See exactly where answers come from</p>
                                         </div>
@@ -249,11 +250,9 @@ export function AIAssistantView() {
                                                 }`}
                                         >
                                             {msg.role === "assistant" && (
-                                                <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
-                                                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-600 text-white text-xs">
-                                                        AI
-                                                    </AvatarFallback>
-                                                </Avatar>
+                                                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0">
+                                                    AI
+                                                </div>
                                             )}
                                             <div
                                                 className={`flex flex-col max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"
@@ -261,7 +260,7 @@ export function AIAssistantView() {
                                             >
                                                 <div
                                                     className={`rounded-2xl px-4 py-3 ${msg.role === "user"
-                                                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                                                        ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md"
                                                         : "bg-muted border"
                                                         }`}
                                                 >
@@ -329,32 +328,28 @@ export function AIAssistantView() {
                                                 </span>
                                             </div>
                                             {msg.role === "user" && (
-                                                <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
-                                                    <AvatarFallback className="bg-blue-500 text-white text-xs">
-                                                        <UserIcon className="h-4 w-4" />
-                                                    </AvatarFallback>
-                                                </Avatar>
+                                                <div className="h-8 w-8 rounded-lg bg-white border-2 border-green-500/30 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                    <UserIcon className="h-4 w-4 text-green-600" />
+                                                </div>
                                             )}
                                         </div>
                                     ))}
 
                                     {isTyping && (
                                         <div className="flex gap-3 justify-start">
-                                            <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
-                                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-600 text-white text-xs">
-                                                    AI
-                                                </AvatarFallback>
-                                            </Avatar>
+                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0">
+                                                AI
+                                            </div>
                                             <div className="rounded-2xl px-4 py-3 bg-muted border">
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex space-x-1">
-                                                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce"></div>
                                                         <div
-                                                            className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"
+                                                            className="h-2 w-2 bg-green-500 rounded-full animate-bounce"
                                                             style={{ animationDelay: "0.1s" }}
                                                         ></div>
                                                         <div
-                                                            className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"
+                                                            className="h-2 w-2 bg-green-500 rounded-full animate-bounce"
                                                             style={{ animationDelay: "0.2s" }}
                                                         ></div>
                                                     </div>
@@ -369,11 +364,12 @@ export function AIAssistantView() {
                                     <div ref={messagesEndRef} />
                                 </div>
                             )}
+                            </div>
                         </ScrollArea>
                     </CardContent>
 
                     {/* Input Area */}
-                    <CardFooter className="border-t p-4">
+                    <CardFooter className="border-t p-4 flex-shrink-0">
                         <div className="flex w-full items-end gap-2">
                             <div className="flex-1">
                                 <Input
@@ -393,7 +389,7 @@ export function AIAssistantView() {
                                 size="icon"
                                 onClick={handleSendMessage}
                                 disabled={isLoading || !message.trim() || !selectedMaterial}
-                                className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-green-600 hover:from-blue-600 hover:to-green-700"
+                                className="flex-shrink-0 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md"
                             >
                                 <Send className="h-4 w-4" />
                                 <span className="sr-only">Send</span>
@@ -405,8 +401,8 @@ export function AIAssistantView() {
 
             {/* Sidebar */}
             {showSidebar && (
-                <Card className={`w-full lg:w-80 flex-shrink-0 ${showSidebar ? 'block' : 'hidden lg:block'}`}>
-                    <CardHeader className="border-b">
+                <Card className={`w-full lg:w-80 flex-shrink-0 h-full overflow-hidden flex flex-col ${showSidebar ? 'block' : 'hidden lg:block'}`}>
+                    <CardHeader className="border-b flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Chat History & Tips</CardTitle>
                             <Button
@@ -419,12 +415,13 @@ export function AIAssistantView() {
                             </Button>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 space-y-6">
+                    <ScrollArea className="flex-1 overflow-y-auto">
+                        <CardContent className="p-4 space-y-6">
                         {/* Recent Sessions */}
                         {sessions.length > 0 && (
                             <div>
                                 <h3 className="font-semibold flex items-center gap-2 text-sm mb-3">
-                                    <Clock className="h-4 w-4 text-blue-500" />
+                                    <Clock className="h-4 w-4 text-green-600" />
                                     Recent Sessions
                                 </h3>
                                 <ScrollArea className="h-48">
@@ -460,19 +457,19 @@ export function AIAssistantView() {
                         {/* Quick Tips */}
                         <div>
                             <h3 className="font-semibold flex items-center gap-2 text-sm mb-3">
-                                <Sparkles className="h-4 w-4 text-green-500" />
+                                <Sparkles className="h-4 w-4 text-green-600" />
                                 Quick Tips
                             </h3>
                             <div className="space-y-3">
-                                <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                                    <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
+                                <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg hover:border-green-500/40 transition-colors">
+                                    <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
                                         📖 Material-Based
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                         Answers come directly from your selected course material
                                     </p>
                                 </div>
-                                <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg">
+                                <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg hover:border-green-500/40 transition-colors">
                                     <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
                                         🎯 Be Specific
                                     </p>
@@ -480,7 +477,7 @@ export function AIAssistantView() {
                                         Ask detailed questions for better, more accurate responses
                                     </p>
                                 </div>
-                                <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg hover:border-emerald-500/40 transition-colors">
                                     <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">
                                         ✨ Follow-ups
                                     </p>
@@ -538,6 +535,7 @@ export function AIAssistantView() {
                             </p>
                         </div>
                     </CardContent>
+                    </ScrollArea>
                 </Card>
             )}
         </div>

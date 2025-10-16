@@ -73,7 +73,8 @@ export async function PUT(req: NextRequest) {
         }
 
         const {
-            name,
+            firstname,
+            lastname,
             email,
             matricNumber,
             level,
@@ -82,17 +83,12 @@ export async function PUT(req: NextRequest) {
         } = await req.json();
 
         // Validate required fields
-        if (!name || !email) {
+        if (!firstname || !email) {
             return NextResponse.json(
-                { message: "Name and email are required" },
+                { message: "First name and email are required" },
                 { status: 400 }
             );
         }
-
-        // Split name into firstname and lastname
-        const nameParts = name.trim().split(' ');
-        const firstname = nameParts[0] || '';
-        const lastname = nameParts.slice(1).join(' ') || '';
 
         // Check if email is already taken by another user
         const existingUser = await prisma.user.findFirst({

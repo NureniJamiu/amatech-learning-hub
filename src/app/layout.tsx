@@ -2,7 +2,7 @@ import type React from "react";
 import "@/app/globals.css";
 
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { QueryProvider } from "@/providers/query-provider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 // import { ThemeProvider } from "@/components/theme-provider"
 // import { Toaster } from "@/components/ui/toaster"
 
-const inter = Inter({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "Amatech Lasu - Student Learning Hub",
@@ -39,7 +39,7 @@ export default function RootLayout({
                         <meta name="twitter:description" content="Your gateway to modern learning, resources, and AI-powered assistance." />
                         <meta name="twitter:image" content="/images/logo.png" />
                     </head>
-            <body className={inter.className}>
+            <body className={spaceGrotesk.className}>
                 <QueryProvider>
                     {/* <ThemeProvider attribute="class" defaultTheme="light" enableSystem> */}
                     {children}

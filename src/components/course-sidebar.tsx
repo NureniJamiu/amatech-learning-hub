@@ -102,7 +102,7 @@ export function CourseSidebar() {
                 )}
 
                 <SidebarMenu
-                    className={`space-y-1 ${
+                    className={`space-y-1 px-2 ${
                         state === "collapsed" ? "mt-0" : ""
                     }`}
                 >
@@ -122,7 +122,11 @@ export function CourseSidebar() {
                                       }
                                       onClick={() => handleCourseClick(course)}
                                       tooltip={`${course.code} - ${course.title}`}
-                                      className="h-9"
+                                      className={`h-9 rounded-lg transition-all duration-200 ${
+                                          selectedCourse?.id === course.id && currentView === "courses"
+                                              ? "bg-green-500/20 text-green-700 border border-green-500/30"
+                                              : "hover:bg-green-500/10"
+                                      }`}
                                   >
                                       <NotebookPen className="h-4 w-4 shrink-0" />
                                       <span className="font-medium">

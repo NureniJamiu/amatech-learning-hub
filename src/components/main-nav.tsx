@@ -58,7 +58,7 @@ export function MainNav() {
 
     return (
         <>
-            <SidebarGroup>
+            <SidebarGroup className="px-2">
                 <SidebarMenu className="space-y-1">
                     {mainNavItems.map((item) => (
                         <SidebarMenuItem key={item.id}>
@@ -66,10 +66,13 @@ export function MainNav() {
                                 isActive={isNavActive(item.title)}
                                 onClick={() => handleNavClick(item.title)}
                                 tooltip={item.title}
-                                className="h-9"
+                                className={`h-10 rounded transition-all duration-200 ${isNavActive(item.title)
+                                    ? "bg-green-400 text-white shadow-md"
+                                    : "hover:bg-green-200/10 hover:text-green-700"
+                                    }`}
                             >
                                 <item.icon className="h-4 w-4 shrink-0" />
-                                <span>{item.title}</span>
+                                <span className="font-medium">{item.title}</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
