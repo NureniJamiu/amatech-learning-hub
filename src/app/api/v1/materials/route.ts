@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateRequest } from "@/middleware/auth.middleware";
 import { processingQueue } from "@/lib/processing-queue";
+import { applyAPIRateLimit, applyFileUploadRateLimit, withRateLimitHeaders } from "@/lib/rate-limit-helpers";
+import { withCache, CacheKeys, CacheTTL, CacheInvalidation } from "@/lib/cache";
 
 // GET /api/materials - Get materials with optional filtering
 export async function GET(request: NextRequest) {
+    // Apply general API rate limiting (100 requests per 15 minutes)
+    const rateLimitResponse = await applyAPIRateLimit(request);
+    if (rateLimitResponse) {
+        return rateLimitResponse;
+    }
+
     try {
         // const authUser = authenticateRequest(request);
         // if (!authUser || !authUser.userId) {
@@ -17,13 +25,11 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const courseId = searchParams.get("courseId") || undefined;
         const search = searchParams.get("search") || undefined;
-        const page = searchParams.get("page")
-            ? Number.parseInt(searchParams.get("page")!)
-            : 1;
-        const limit = searchParams.get("limit")
-            ? Number.parseInt(searchParams.get("limit")!)
-            : 10;
-        const skip = (page - 1) * limit;
+        
+        // Parse pagination parameters using utility
+        const { parseOffsetPagination, buildOffsetQuery, processOffsetResults } = await import('@/lib/pagination');
+        const paginationParams = parseOffsetPagination(searchParams);
+        const offsetQuery = buildOffsetQuery(paginationParams);
 
         // Build filter object
         const where: any = {};
@@ -32,34 +38,61 @@ export async function GET(request: NextRequest) {
             where.title = { contains: search, mode: "insensitive" };
         }
 
-        // Get materials with pagination
-        const [materials, total] = await Promise.all([
-            prisma.material.findMany({
-                where,
-                skip,
-                take: limit,
-                include: {
-                    course: {
-                        select: {
-                            code: true,
-                            title: true,
-                        },
-                    },
-                    uploadedBy: {
+        // Create cache key based on query parameters
+        const cacheKey = CacheKeys.materialList(
+            JSON.stringify({ courseId, search, ...paginationParams })
+        );
+
+        // Use cache wrapper for material list (10 minutes TTL)
+        const paginatedResult = await withCache(
+            cacheKey,
+            CacheTTL.MATERIAL_LIST,
+            async () => {
+                // Get materials with pagination
+                const [materials, total] = await Promise.all([
+                    prisma.material.findMany({
+                        where,
+                        ...offsetQuery,
                         select: {
                             id: true,
-                            firstname: true,
-                            lastname: true,
-                            email: true,
+                            title: true,
+                            fileUrl: true,
+                            courseId: true,
+                            uploadedById: true,
+                            processed: true,
+                            processingStatus: true,
+                            chunksCount: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            course: {
+                                select: {
+                                    code: true,
+                                    title: true,
+                                },
+                            },
+                            uploadedBy: {
+                                select: {
+                                    id: true,
+                                    firstname: true,
+                                    lastname: true,
+                                    email: true,
+                                },
+                            },
                         },
-                    },
-                },
-                orderBy: { createdAt: "desc" },
-            }),
-            prisma.material.count({ where }),
-        ]);
+                        orderBy: { createdAt: "desc" },
+                    }),
+                    prisma.material.count({ where }),
+                ]);
 
-        return NextResponse.json({ materials, total });
+                return processOffsetResults(materials, total, paginationParams);
+            }
+        );
+
+        const response = NextResponse.json({
+            materials: paginatedResult.data,
+            pagination: paginatedResult.pagination,
+        });
+        return withRateLimitHeaders(response, request);
     } catch (error) {
         console.error("Error fetching materials:", error);
         return NextResponse.json(
@@ -79,6 +112,12 @@ export async function POST(request: NextRequest) {
                 { message: "Unauthorized" },
                 { status: 401 }
             );
+        }
+
+        // Apply file upload rate limiting (10 uploads per hour per user)
+        const rateLimitResponse = await applyFileUploadRateLimit(request, authUser.userId);
+        if (rateLimitResponse) {
+            return rateLimitResponse;
         }
 
         const formData = await request.formData();
@@ -153,10 +192,16 @@ export async function POST(request: NextRequest) {
             // Material is created but not queued - can be retried later
         }
 
-        return NextResponse.json({
+        // Invalidate material caches after creation
+        CacheInvalidation.invalidateMaterial();
+
+        const response = NextResponse.json({
             ...material,
             message: 'Material uploaded successfully and queued for processing',
         }, { status: 201 });
+
+        // Add rate limit headers to response
+        return withRateLimitHeaders(response, request);
     } catch (error) {
         console.error("Error creating material:", error);
         return NextResponse.json(

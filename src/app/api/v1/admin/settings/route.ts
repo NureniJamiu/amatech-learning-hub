@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/middleware/auth.middleware";
+import { applyAdminRateLimit, withRateLimitHeaders, getUserIdFromRequest } from "@/lib/rate-limit-helpers";
 
 // Validation schema for system settings
 const systemSettingsSchema = z.object({
@@ -32,6 +33,13 @@ export async function GET(request: NextRequest) {
       return authResult; // Return error response
     }
 
+    // Apply admin rate limiting (200 requests per 15 minutes)
+    const userId = await getUserIdFromRequest(request);
+    const rateLimitResponse = await applyAdminRateLimit(request, userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     // Get or create system settings
     let settings = await prisma.systemSettings.findFirst();
 
@@ -52,7 +60,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(settings);
+    const response = NextResponse.json(settings);
+    return withRateLimitHeaders(response, request);
   } catch (error: any) {
     console.error("Error fetching system settings:", error);
     return NextResponse.json(
@@ -69,6 +78,13 @@ export async function PUT(request: NextRequest) {
     const authResult = await requireAdmin(request);
     if (authResult instanceof NextResponse) {
       return authResult; // Return error response
+    }
+
+    // Apply admin rate limiting (200 requests per 15 minutes)
+    const userId = await getUserIdFromRequest(request);
+    const rateLimitResponse = await applyAdminRateLimit(request, userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const body = await request.json();
@@ -103,7 +119,8 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(settings);
+    const response = NextResponse.json(settings);
+    return withRateLimitHeaders(response, request);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

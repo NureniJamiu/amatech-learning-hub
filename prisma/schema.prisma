@@ -31,6 +31,9 @@ model User {
   timetableEntries TimetableEntry[]
   chatSessions     ChatSession[]    // Add relation to chat sessions
 
+  @@index([level])
+  @@index([isAdmin])
+  @@index([currentSemester])
   @@map("users")
 }
 
@@ -62,6 +65,9 @@ model Course {
   timetableEntries TimetableEntry[]
   chatSessions     ChatSession[]    // Add relation to chat sessions
 
+  @@index([level])
+  @@index([semester])
+  @@index([level, semester])
   @@map("courses")
 }
 
@@ -74,6 +80,7 @@ model CourseToTutor {
   tutor     Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, tutorId])
+  @@index([tutorId])
   @@map("course_tutors")
 }
 
@@ -98,6 +105,9 @@ model Material {
 
   @@index([processingStatus])
   @@index([courseId])
+  @@index([uploadedById])
+  @@index([courseId, processingStatus])
+  @@index([createdAt(sort: Desc)])
   @@map("materials")
 }
 
@@ -114,6 +124,7 @@ model MaterialChunk {
 
   @@index([materialId])
   @@index([chunkIndex])
+  @@index([materialId, chunkIndex])
   @@map("material_chunks")
 }
 
@@ -148,6 +159,7 @@ model ChatSession {
 
   @@index([userId])
   @@index([courseId])
+  @@index([userId, updatedAt(sort: Desc)])
   @@map("chat_sessions")
 }
 
@@ -163,6 +175,7 @@ model ChatMessage {
 
   @@index([sessionId])
   @@index([role])
+  @@index([sessionId, createdAt(sort: Asc)])
   @@map("chat_messages")
 }
 
@@ -178,6 +191,10 @@ model PastQuestion {
   course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
+  @@index([courseId])
+  @@index([year])
+  @@index([uploadedById])
+  @@index([createdAt(sort: Desc)])
   @@map("past_questions")
 }
 
@@ -191,6 +208,7 @@ model Bookmark {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt(sort: Desc)])
   @@map("bookmarks")
 }
 
@@ -207,6 +225,9 @@ model TimetableEntry {
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, semester])
+  @@index([courseId])
+  @@index([day])
   @@map("timetable_entries")
 }
 
@@ -219,6 +240,8 @@ model Notification {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("notifications")
 }
 
@@ -231,6 +254,8 @@ model Session {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expires])
   @@map("sessions")
 }
 
@@ -277,5 +302,38 @@ model ActivityLog {
   userAgent String?
   createdAt DateTime @default(now())
 
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action])
+  @@index([ipAddress])
   @@map("activity_logs")
+}
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String   @unique // IP address or user ID
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([resetAt])
+  @@map("rate_limits")
+}
+
+model IPBlock {
+  id          String    @id @default(cuid())
+  ipAddress   String    @unique
+  reason      String    // Reason for blocking (e.g., "repeated_auth_failures")
+  blockedAt   DateTime  @default(now())
+  expiresAt   DateTime? // Null for permanent blocks
+  isActive    Boolean   @default(true)
+  failedCount Int       @default(0) // Track number of failed attempts
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ipAddress])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("ip_blocks")
 }

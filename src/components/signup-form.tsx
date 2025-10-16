@@ -84,14 +84,11 @@ export function SignupForm({
         if (validateForm()) {
             register(
                 {
-                    name: `${formData.firstname} ${formData.lastname}`.trim(),
+                    firstname: formData.firstname,
+                    lastname: formData.lastname,
                     email: formData.email,
                     password: formData.password,
-                    passwordConfirmation: formData.passwordConfirmation,
-                    matricNumber: "",
                     level: parseInt(formData.level),
-                    department: "",
-                    faculty: "",
                 },
                 {
                     onSuccess: () => {

@@ -3,9 +3,22 @@ import prisma from "@/lib/prisma";
 import { comparePasswords } from "@/utils/hash";
 import { generateAuthToken } from "@/utils/token";
 import { SessionManager } from "@/lib/session-manager";
+import { 
+  applyAuthRateLimit, 
+  recordFailedAuthAttempt, 
+  resetFailedAuthAttempts,
+  withRateLimitHeaders 
+} from "@/lib/rate-limit-helpers";
 
 export async function POST(req: NextRequest) {
   console.log("Login route hit");
+  
+  // Apply rate limiting for auth endpoints (5 requests per 15 minutes)
+  const rateLimitResponse = await applyAuthRateLimit(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { email, password } = await req.json();
     console.log("Login attempt for email:", email);
@@ -23,6 +36,8 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       console.log("User not found");
+      // Record failed authentication attempt
+      await recordFailedAuthAttempt(req);
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 400 }
@@ -34,11 +49,16 @@ export async function POST(req: NextRequest) {
 
     if (!isValid) {
       console.log("Invalid password");
+      // Record failed authentication attempt
+      await recordFailedAuthAttempt(req);
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 400 }
       );
     }
+
+    // Reset failed attempts on successful login
+    await resetFailedAuthAttempts(req);
 
     const token = await generateAuthToken(user.id);
     console.log("Token generated successfully");
@@ -83,7 +103,8 @@ export async function POST(req: NextRequest) {
         path: "/",
     });
 
-    return response;
+    // Add rate limit headers to response
+    return withRateLimitHeaders(response, req);
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

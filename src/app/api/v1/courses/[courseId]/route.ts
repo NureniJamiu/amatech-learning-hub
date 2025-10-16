@@ -8,6 +8,7 @@ import {
     validateRequestBody,
     validatePositiveInteger,
 } from "@/lib/db-utils";
+import { withCache, CacheKeys, CacheTTL, CacheInvalidation } from "@/lib/cache";
 
 // GET /api/courses/[id] - Get a single course by ID
 export async function GET(
@@ -24,31 +25,84 @@ export async function GET(
             );
         }
 
-        const course = await prisma.course.findUnique({
-            where: { id: courseId },
-            include: {
-                tutors: {
-                    include: {
-                        tutor: true,
-                    },
-                },
-                materials: true,
-                pastQuestions: true,
-            },
-        });
+        // Use caching with parallel queries for better performance
+        const transformedCourse = await withCache(
+            CacheKeys.course(courseId),
+            CacheTTL.COURSE,
+            async () => {
+                const [course, materials, pastQuestions] = await Promise.all([
+                    prisma.course.findUnique({
+                        where: { id: courseId },
+                        select: {
+                            id: true,
+                            code: true,
+                            title: true,
+                            units: true,
+                            level: true,
+                            semester: true,
+                            description: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            tutors: {
+                                select: {
+                                    tutor: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            email: true,
+                                            avatar: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    }),
+                    prisma.material.findMany({
+                        where: { courseId },
+                        select: {
+                            id: true,
+                            title: true,
+                            fileUrl: true,
+                            processed: true,
+                            processingStatus: true,
+                            chunksCount: true,
+                            createdAt: true,
+                        },
+                        orderBy: { createdAt: 'desc' },
+                    }),
+                    prisma.pastQuestion.findMany({
+                        where: { courseId },
+                        select: {
+                            id: true,
+                            title: true,
+                            year: true,
+                            fileUrl: true,
+                            createdAt: true,
+                        },
+                        orderBy: { year: 'desc' },
+                    }),
+                ]);
 
-        if (!course) {
+                if (!course) {
+                    throw new Error('Course not found');
+                }
+
+                // Transform data to match our frontend types
+                return {
+                    ...course,
+                    tutors: course.tutors.map((ct) => ct.tutor),
+                    materials,
+                    pastQuestions,
+                };
+            }
+        );
+
+        if (!transformedCourse) {
             return NextResponse.json(
                 { message: "Course not found" },
                 { status: 404 }
             );
         }
-
-        // Transform data to match our frontend types
-        const transformedCourse = {
-            ...course,
-            tutors: course.tutors.map((ct) => ct.tutor),
-        };
 
         return NextResponse.json(transformedCourse);
     } catch (error) {
@@ -205,6 +259,9 @@ export async function PUT(
             });
         });
 
+        // Invalidate cache for this course
+        CacheInvalidation.invalidateCourse(courseId);
+
         // Transform the response to match the GET route format
         const transformedCourse = {
             ...updatedCourse,
@@ -275,6 +332,9 @@ export async function DELETE(
         await prisma.course.delete({
             where: { id: courseId },
         });
+
+        // Invalidate cache for this course
+        CacheInvalidation.invalidateCourse(courseId);
 
         return NextResponse.json(
             { message: "Course deleted successfully" },

@@ -2,43 +2,45 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateRequest } from "@/middleware/auth.middleware";
 import { isAdminUser } from "@/helpers";
+import { withCache, CacheKeys, CacheTTL, CacheInvalidation } from "@/lib/cache";
 
-// interface Params {
-//   params: {
-//     id: string;
-//   };
-// }
-
-// GET /api/materials/[id] - Get a specific material by ID
-export async function GET(request: NextRequest,{ params }: { params: Promise<{ id: string }> }) {
+// GET /api/materials/[materialId] - Get a specific material by ID
+export async function GET(request: NextRequest,{ params }: { params: Promise<{ materialId: string }> }) {
   try {
     // const authUser = authenticateRequest(request);
     // if (!authUser || !authUser.userId) {
     //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     // }
 
-    const { id: materialId } = await params;
+    const { materialId } = await params;
 
-    const material = await prisma.material.findUnique({
-      where: { id: materialId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            code: true,
-            title: true,
+    // Use cache wrapper for material data (30 minutes TTL)
+    const material = await withCache(
+      CacheKeys.material(materialId),
+      CacheTTL.MATERIAL,
+      async () => {
+        return await prisma.material.findUnique({
+          where: { id: materialId },
+          include: {
+            course: {
+              select: {
+                id: true,
+                code: true,
+                title: true,
+              },
+            },
+            uploadedBy: {
+              select: {
+                id: true,
+                firstname: true,
+                lastname: true,
+                email: true,
+              },
+            },
           },
-        },
-        uploadedBy: {
-          select: {
-            id: true,
-            firstname: true,
-            lastname: true,
-            email: true,
-          },
-        },
-      },
-    });
+        });
+      }
+    );
 
     if (!material) {
       return NextResponse.json({ message: "Material not found" }, { status: 404 });
@@ -54,15 +56,15 @@ export async function GET(request: NextRequest,{ params }: { params: Promise<{ i
   }
 }
 
-// PATCH /api/materials/[id] - Update a material
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// PATCH /api/materials/[materialId] - Update a material
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ materialId: string }> }) {
   try {
     // const authUser = authenticateRequest(request);
     // if (!authUser || !authUser.userId) {
     //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     // }
 
-    const { id: materialId } = await params;
+    const { materialId } = await params;
     const body = await request.json();
     const { title, fileUrl, courseId } = body;
 
@@ -128,6 +130,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
+    // Invalidate cache for this material
+    CacheInvalidation.invalidateMaterial(materialId);
+
     return NextResponse.json(updatedMaterial);
   } catch (error) {
     console.error("Error updating material:", error);
@@ -138,15 +143,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 }
 
-// DELETE /api/materials/[id] - Delete a material
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// DELETE /api/materials/[materialId] - Delete a material
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ materialId: string }> }) {
   try {
     // const authUser = authenticateRequest(request);
     // if (!authUser || !authUser.userId) {
     //   return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     // }
 
-    const { id: materialId } = await params;
+    const { materialId } = await params;
 
     // Check if material exists and user has permission to delete
     const existingMaterial = await prisma.material.findUnique({
@@ -169,6 +174,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     // Delete the material
     await prisma.material.delete({ where: { id: materialId } });
+
+    // Invalidate cache for this material
+    CacheInvalidation.invalidateMaterial(materialId);
 
     return NextResponse.json({ message: "Material deleted successfully" });
   } catch (error) {

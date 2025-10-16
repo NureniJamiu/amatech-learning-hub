@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/utils/hash";
 import { generateAuthToken } from "@/utils/token";
+import { applyAuthRateLimit, withRateLimitHeaders } from "@/lib/rate-limit-helpers";
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting for auth endpoints (5 requests per 15 minutes)
+  const rateLimitResponse = await applyAuthRateLimit(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { firstname, lastname, email, password, level } = await req.json();
 
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     const token = await generateAuthToken(user.id);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         token,
         message: "User registered successfully",
@@ -82,6 +89,9 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
+
+    // Add rate limit headers to response
+    return withRateLimitHeaders(response, req);
   } catch (error) {
     console.error(error);
     return NextResponse.json(

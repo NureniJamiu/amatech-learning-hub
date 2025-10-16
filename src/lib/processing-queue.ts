@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { GrokRAGPipeline } from '@/lib/rag-pipeline-grok';
+import { CacheInvalidation } from '@/lib/cache';
 
 export interface QueueJob {
   id: string;
@@ -61,6 +62,9 @@ export class ProcessingQueue {
         where: { id: materialId },
         data: { processingStatus: 'queued' },
       });
+
+      // Invalidate material cache when status changes
+      CacheInvalidation.invalidateMaterial(materialId);
 
       console.log(`Added job ${job.id} to queue for material ${materialId}`);
       return job.id;
@@ -190,6 +194,9 @@ export class ProcessingQueue {
         },
       });
 
+      // Invalidate material cache when status changes
+      CacheInvalidation.invalidateMaterial(materialId);
+
       console.log(`Starting PDF processing for material ${materialId}`);
 
       // Process the PDF using RAG pipeline
@@ -213,6 +220,9 @@ export class ProcessingQueue {
           processingCompletedAt: new Date(),
         },
       });
+
+      // Invalidate material cache when status changes
+      CacheInvalidation.invalidateMaterial(materialId);
 
       console.log(`Successfully processed material ${materialId}: ${result.chunksCreated} chunks created`);
     } catch (error: any) {
@@ -248,6 +258,9 @@ export class ProcessingQueue {
             processingCompletedAt: new Date(),
           },
         });
+
+        // Invalidate material cache when status changes
+        CacheInvalidation.invalidateMaterial(materialId);
 
         console.log(`Job ${jobId} failed permanently after ${newAttempts} attempts`);
       }

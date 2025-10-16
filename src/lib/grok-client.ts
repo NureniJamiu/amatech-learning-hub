@@ -246,18 +246,23 @@ export class GrokClient {
         error instanceof RateLimitError ||
         (error instanceof GrokAPIError && error.statusCode && error.statusCode < 500)
       ) {
+        console.error(`[Grok] Non-retryable error: ${error.message}`);
         throw error;
       }
 
       // Check if we should retry
       if (attempt >= this.config.maxRetries) {
-        console.error(`[Grok] Max retries (${this.config.maxRetries}) exceeded`);
+        console.error(`[Grok] Max retries (${this.config.maxRetries}) exceeded for error: ${error.message}`);
         throw error;
       }
 
-      // Calculate delay with exponential backoff
-      const delay = this.config.retryDelay * Math.pow(2, attempt);
-      console.warn(`[Grok] Request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries})`);
+      // Calculate delay with exponential backoff (with jitter)
+      const baseDelay = this.config.retryDelay * Math.pow(2, attempt);
+      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+      const delay = baseDelay + jitter;
+      
+      console.warn(`[Grok] Request failed: ${error.message}`);
+      console.warn(`[Grok] Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${this.config.maxRetries})`);
       
       await new Promise(resolve => setTimeout(resolve, delay));
       

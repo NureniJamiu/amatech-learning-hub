@@ -7,6 +7,7 @@ import {
     validateRequestBody,
     validatePositiveInteger,
 } from "@/lib/db-utils";
+import { withCache, CacheKeys, CacheTTL, CacheInvalidation } from "@/lib/cache";
 
 // GET /api/courses - Get all courses with optional filtering
 export async function GET(request: NextRequest) {
@@ -63,40 +64,54 @@ export async function GET(request: NextRequest) {
 
         console.log("Where clause:", where);
 
-        // Get courses with pagination
-        const [fullCourses, total] = await Promise.all([
-            prisma.course.findMany({
-                where,
-                skip,
-                take: limit,
-                include: {
-                    tutors: {
-                        include: {
-                            tutor: true,
-                        },
-                    },
-                    materials: true,
-                    pastQuestions: true,
-                },
-                orderBy: { code: "asc" },
-            }),
-            prisma.course.count({ where }),
-        ]);
-
-        console.log(
-            "Full courses query successful, found:",
-            fullCourses.length,
-            "Total:",
-            total
+        // Create cache key based on query parameters
+        const cacheKey = CacheKeys.courseList(
+            JSON.stringify({ level, semester, search, page, limit })
         );
 
-        // Transform data to match our frontend types
-        const transformedCourses = fullCourses.map((course) => ({
-            ...course,
-            tutors: course.tutors.map((ct) => ct.tutor),
-        }));
+        // Use cache wrapper for course data (1 hour TTL)
+        const result = await withCache(
+            cacheKey,
+            CacheTTL.COURSE,
+            async () => {
+                // Get courses with pagination
+                const [fullCourses, total] = await Promise.all([
+                    prisma.course.findMany({
+                        where,
+                        skip,
+                        take: limit,
+                        include: {
+                            tutors: {
+                                include: {
+                                    tutor: true,
+                                },
+                            },
+                            materials: true,
+                            pastQuestions: true,
+                        },
+                        orderBy: { code: "asc" },
+                    }),
+                    prisma.course.count({ where }),
+                ]);
 
-        return NextResponse.json({ courses: transformedCourses, total });
+                console.log(
+                    "Full courses query successful, found:",
+                    fullCourses.length,
+                    "Total:",
+                    total
+                );
+
+                // Transform data to match our frontend types
+                const transformedCourses = fullCourses.map((course) => ({
+                    ...course,
+                    tutors: course.tutors.map((ct) => ct.tutor),
+                }));
+
+                return { courses: transformedCourses, total };
+            }
+        );
+
+        return NextResponse.json(result);
     } catch (error) {
         console.error("Error fetching courses:", error);
         console.error("Error details:", {
@@ -230,6 +245,9 @@ export async function POST(request: NextRequest) {
             ...createdCourse,
             tutors: createdCourse?.tutors.map((ct) => ct.tutor) || [],
         };
+
+        // Invalidate course caches after creation
+        CacheInvalidation.invalidateCourse();
 
         return NextResponse.json(transformedCourse, { status: 201 });
     } catch (error) {

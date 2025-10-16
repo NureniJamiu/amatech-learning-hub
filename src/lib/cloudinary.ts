@@ -83,6 +83,90 @@ function detectResourceType(file: File): ResourceType {
 }
 
 /**
+ * Custom error classes for Cloudinary
+ */
+export class CloudinaryError extends Error {
+    constructor(
+        message: string,
+        public statusCode?: number,
+        public response?: any
+    ) {
+        super(message);
+        this.name = "CloudinaryError";
+    }
+}
+
+export class CloudinaryTimeoutError extends CloudinaryError {
+    constructor(message: string) {
+        super(message, 408);
+        this.name = "CloudinaryTimeoutError";
+    }
+}
+
+export class CloudinaryRateLimitError extends CloudinaryError {
+    constructor(message: string, public retryAfter?: number) {
+        super(message, 429);
+        this.name = "CloudinaryRateLimitError";
+    }
+}
+
+/**
+ * Retry configuration for Cloudinary uploads
+ */
+interface RetryConfig {
+    maxRetries: number;
+    retryDelay: number;
+    timeout: number;
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+    maxRetries: 3,
+    retryDelay: 1000, // 1 second
+    timeout: 60000, // 60 seconds
+};
+
+/**
+ * Retry logic with exponential backoff for Cloudinary
+ */
+async function retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    config: RetryConfig = DEFAULT_RETRY_CONFIG,
+    attempt: number = 0
+): Promise<T> {
+    try {
+        return await fn();
+    } catch (error: any) {
+        // Don't retry on certain errors
+        if (
+            error instanceof CloudinaryTimeoutError ||
+            error instanceof CloudinaryRateLimitError ||
+            (error instanceof CloudinaryError && error.statusCode && error.statusCode < 500)
+        ) {
+            console.error(`[Cloudinary] Non-retryable error: ${error.message}`);
+            throw error;
+        }
+
+        // Check if we should retry
+        if (attempt >= config.maxRetries) {
+            console.error(`[Cloudinary] Max retries (${config.maxRetries}) exceeded`);
+            throw error;
+        }
+
+        // Calculate delay with exponential backoff (with jitter)
+        const baseDelay = config.retryDelay * Math.pow(2, attempt);
+        const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+        const delay = baseDelay + jitter;
+
+        console.warn(`[Cloudinary] Request failed: ${error.message}`);
+        console.warn(`[Cloudinary] Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${config.maxRetries})`);
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        return retryWithBackoff(fn, config, attempt + 1);
+    }
+}
+
+/**
  * Uploads a file to Cloudinary and returns the response
  * @param file The file to upload
  * @param options Upload options including preset, resource type, etc.
@@ -93,11 +177,11 @@ export async function uploadToCloudinary(
     options: CloudinaryUploadOptions
 ): Promise<CloudinaryResponse> {
     if (!file) {
-        throw new Error("No file provided for upload");
+        throw new CloudinaryError("No file provided for upload", 400);
     }
 
     if (!options.uploadPreset) {
-        throw new Error("Upload preset is required");
+        throw new CloudinaryError("Upload preset is required", 400);
     }
 
     // Determine resource type if not specified
@@ -131,39 +215,63 @@ export async function uploadToCloudinary(
     // Get the Cloudinary upload URL for the specified resource type
     const uploadUrl = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/${cloudinaryResourceType}/upload`;
 
-    try {
-        const response = await fetch(uploadUrl, {
-            method: "POST",
-            body: formData,
-        });
+    return retryWithBackoff(async () => {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(
+                () => controller.abort(),
+                DEFAULT_RETRY_CONFIG.timeout
+            );
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || "Upload failed");
+            const response = await fetch(uploadUrl, {
+                method: "POST",
+                body: formData,
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            // Handle rate limiting
+            if (response.status === 429) {
+                const retryAfter = parseInt(
+                    response.headers.get("retry-after") || "60",
+                    10
+                );
+                throw new CloudinaryRateLimitError(
+                    "Cloudinary rate limit exceeded",
+                    retryAfter
+                );
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new CloudinaryError(
+                    errorData.error?.message || `Upload failed: ${response.statusText}`,
+                    response.status,
+                    errorData
+                );
+            }
+
+            const data = await response.json();
+
+            console.log(`[Cloudinary] Successfully uploaded ${file.name}`);
+
+            return {
+                url: data.url,
+                secureUrl: data.secure_url,
+                publicId: data.public_id,
+                format: data.format,
+                width: data.width,
+                height: data.height,
+                resourceType: data.resource_type,
+            };
+        } catch (error: any) {
+            if (error.name === "AbortError") {
+                throw new CloudinaryTimeoutError("Cloudinary upload timed out");
+            }
+            throw error;
         }
-
-        const data = await response.json();
-
-        return {
-            url: data.url,
-            secureUrl: data.secure_url,
-            publicId: data.public_id,
-            format: data.format,
-            width: data.width,
-            height: data.height,
-            resourceType: data.resource_type,
-        };
-    } catch (error: any) {
-        console.error("Cloudinary upload error:", error);
-        return {
-            url: "",
-            secureUrl: "",
-            publicId: "",
-            format: "",
-            resourceType: "",
-            error: error.message || "Upload failed",
-        };
-    }
+    });
 }
 
 /**
@@ -174,17 +282,21 @@ export async function uploadImage(
     uploadPreset: string,
     options: Omit<CloudinaryUploadOptions, "uploadPreset" | "resourceType"> = {}
 ): Promise<string> {
-    const response = await uploadToCloudinary(file, {
-        uploadPreset,
-        resourceType: "image",
-        ...options,
-    });
+    try {
+        const response = await uploadToCloudinary(file, {
+            uploadPreset,
+            resourceType: "image",
+            ...options,
+        });
 
-    if (response.error) {
-        throw new Error(`Image upload failed: ${response.error}`);
+        return response.secureUrl;
+    } catch (error: any) {
+        console.error("[Cloudinary] Image upload failed:", error);
+        throw new CloudinaryError(
+            `Image upload failed: ${error.message}`,
+            error.statusCode
+        );
     }
-
-    return response.secureUrl;
 }
 
 /**
@@ -195,17 +307,21 @@ export async function uploadPdf(
     uploadPreset: string,
     options: Omit<CloudinaryUploadOptions, "uploadPreset" | "resourceType"> = {}
 ): Promise<string> {
-    const response = await uploadToCloudinary(file, {
-        uploadPreset,
-        resourceType: "pdf",
-        ...options,
-    });
+    try {
+        const response = await uploadToCloudinary(file, {
+            uploadPreset,
+            resourceType: "pdf",
+            ...options,
+        });
 
-    if (response.error) {
-        throw new Error(`PDF upload failed: ${response.error}`);
+        return response.secureUrl;
+    } catch (error: any) {
+        console.error("[Cloudinary] PDF upload failed:", error);
+        throw new CloudinaryError(
+            `PDF upload failed: ${error.message}`,
+            error.statusCode
+        );
     }
-
-    return response.secureUrl;
 }
 
 /**
@@ -216,15 +332,19 @@ export async function uploadVideo(
     uploadPreset: string,
     options: Omit<CloudinaryUploadOptions, "uploadPreset" | "resourceType"> = {}
 ): Promise<string> {
-    const response = await uploadToCloudinary(file, {
-        uploadPreset,
-        resourceType: "video",
-        ...options,
-    });
+    try {
+        const response = await uploadToCloudinary(file, {
+            uploadPreset,
+            resourceType: "video",
+            ...options,
+        });
 
-    if (response.error) {
-        throw new Error(`Video upload failed: ${response.error}`);
+        return response.secureUrl;
+    } catch (error: any) {
+        console.error("[Cloudinary] Video upload failed:", error);
+        throw new CloudinaryError(
+            `Video upload failed: ${error.message}`,
+            error.statusCode
+        );
     }
-
-    return response.secureUrl;
 }

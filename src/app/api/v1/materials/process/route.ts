@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
 import { getGrokRAGPipeline } from "@/lib/rag-pipeline-grok";
 import { GrokAPIError, RateLimitError, TimeoutError } from "@/lib/grok-client";
+import { CacheInvalidation } from "@/lib/cache";
 
 const prisma = new PrismaClient();
 
@@ -47,6 +48,9 @@ export async function POST(req: Request) {
             },
         });
 
+        // Invalidate material cache when status changes
+        CacheInvalidation.invalidateMaterial(materialId);
+
         console.log(`[Material Processing] Starting processing for material: ${material.title}`);
 
         // Get Grok RAG pipeline instance
@@ -74,6 +78,9 @@ export async function POST(req: Request) {
         }
 
         console.log(`[Material Processing] Successfully processed material: ${material.title} (${result.chunksCreated} chunks)`);
+
+        // Invalidate material cache after successful processing
+        CacheInvalidation.invalidateMaterial(materialId);
 
         return NextResponse.json({
             success: true,
@@ -112,6 +119,9 @@ export async function POST(req: Request) {
                         processingStatus: "failed",
                     },
                 });
+                
+                // Invalidate material cache when status changes
+                CacheInvalidation.invalidateMaterial(materialId);
             } catch (updateError) {
                 console.error("[Material Processing] Failed to update material status:", updateError);
             }

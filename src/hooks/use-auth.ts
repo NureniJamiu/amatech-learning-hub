@@ -18,14 +18,11 @@ export type LoginInput = {
 };
 
 export type RegisterInput = {
-    name: string;
+    firstname: string;
+    lastname: string;
     email: string;
     password: string;
-    passwordConfirmation: string;
-    matricNumber: string;
     level: number;
-    department: string;
-    faculty: string;
 };
 
 // Utility functions for user data management

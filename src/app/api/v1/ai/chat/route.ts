@@ -1,16 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
 import { getGrokRAGPipeline, ChatHistory } from "@/lib/rag-pipeline-grok";
 import { GrokAPIError, RateLimitError, TimeoutError } from "@/lib/grok-client";
+import { applyAIQueryRateLimit, withRateLimitHeaders } from "@/lib/rate-limit-helpers";
 
 const prisma = new PrismaClient();
 
 /**
  * Process AI chat query using Grok-powered RAG pipeline
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
         const { message, courseId, sessionId, userId } = await req.json();
+
+        // Apply rate limiting for AI queries (20 queries per hour per user)
+        const rateLimitResponse = await applyAIQueryRateLimit(req, userId);
+        if (rateLimitResponse) {
+            return rateLimitResponse;
+        }
 
         if (!message || !userId) {
             return NextResponse.json(
@@ -116,7 +123,7 @@ export async function POST(req: Request) {
 
         console.log(`[AI Chat] Successfully generated response for session ${session.id}`);
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             sessionId: session.id,
             messageId: aiMessage.id,
@@ -131,6 +138,9 @@ export async function POST(req: Request) {
             followUpQuestions: ragResult.followUpQuestions,
             model: 'grok',
         });
+
+        // Add rate limit headers to response
+        return withRateLimitHeaders(response, req);
 
     } catch (error) {
         console.error("[AI Chat] Error:", error);
@@ -163,9 +173,16 @@ export async function POST(req: Request) {
 }
 
 /**
- * Get chat history for a session
+ * Get chat history for a session with cursor-based pagination
  */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  // Apply general API rate limiting (100 requests per 15 minutes)
+  const { applyAPIRateLimit } = await import("@/lib/rate-limit-helpers");
+  const rateLimitResponse = await applyAPIRateLimit(req);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const url = new URL(req.url);
     const sessionId = url.searchParams.get('sessionId');
@@ -179,18 +196,40 @@ export async function GET(req: Request) {
     }
 
     if (sessionId) {
-      // Get specific session
-      const session = await prisma.chatSession.findUnique({
-        where: { id: sessionId },
-        include: {
-          messages: {
-            orderBy: { createdAt: 'asc' },
+      // Get specific session with paginated messages
+      const { parseCursorPagination, buildCursorQuery, processCursorResults } = await import('@/lib/pagination');
+      const paginationParams = parseCursorPagination(url.searchParams);
+      const cursorQuery = buildCursorQuery(paginationParams);
+
+      const [session, messages] = await Promise.all([
+        prisma.chatSession.findUnique({
+          where: { id: sessionId },
+          select: {
+            id: true,
+            userId: true,
+            courseId: true,
+            title: true,
+            createdAt: true,
+            updatedAt: true,
+            course: {
+              select: { code: true, title: true },
+            },
           },
-          course: {
-            select: { code: true, title: true },
+        }),
+        prisma.chatMessage.findMany({
+          where: { sessionId },
+          ...cursorQuery,
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            content: true,
+            role: true,
+            sources: true,
+            metadata: true,
+            createdAt: true,
           },
-        },
-      });
+        }),
+      ]);
 
       if (!session) {
         return NextResponse.json(
@@ -199,15 +238,33 @@ export async function GET(req: Request) {
         );
       }
 
-      return NextResponse.json({
+      const paginatedMessages = processCursorResults(messages, paginationParams.limit);
+
+      const response = NextResponse.json({
         success: true,
-        session,
+        session: {
+          ...session,
+          messages: paginatedMessages.data,
+        },
+        pageInfo: paginatedMessages.pageInfo,
       });
+      return withRateLimitHeaders(response, req);
     } else {
-      // Get all sessions for user
+      // Get all sessions for user with cursor-based pagination
+      const { parseCursorPagination, buildCursorQuery, processCursorResults } = await import('@/lib/pagination');
+      const paginationParams = parseCursorPagination(url.searchParams);
+      const cursorQuery = buildCursorQuery(paginationParams);
+
       const sessions = await prisma.chatSession.findMany({
         where: { userId: userId! },
-        include: {
+        ...cursorQuery,
+        select: {
+          id: true,
+          userId: true,
+          courseId: true,
+          title: true,
+          createdAt: true,
+          updatedAt: true,
           course: {
             select: { code: true, title: true },
           },
@@ -218,10 +275,14 @@ export async function GET(req: Request) {
         orderBy: { updatedAt: 'desc' },
       });
 
-      return NextResponse.json({
+      const paginatedSessions = processCursorResults(sessions, paginationParams.limit);
+
+      const response = NextResponse.json({
         success: true,
-        sessions,
+        sessions: paginatedSessions.data,
+        pageInfo: paginatedSessions.pageInfo,
       });
+      return withRateLimitHeaders(response, req);
     }
   } catch (error) {
     console.error('Chat history error:', error);

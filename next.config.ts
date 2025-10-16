@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
     images: {
         unoptimized: true,
     },
-        // Custom favicon path for Next.js
-        favicon: '/images/logo.png',
     serverExternalPackages: ["pdf-parse"],
     // Updated Turbopack configuration (moved from experimental.turbo)
     turbopack: {
