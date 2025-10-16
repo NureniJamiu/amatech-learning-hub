@@ -29,7 +29,7 @@ model User {
   pastQuestions    PastQuestion[]
   sessions         Session[]
   timetableEntries TimetableEntry[]
-  chatSessions     ChatSession[]    // Add relation to chat sessions
+  chatSessions     ChatSession[]
 
   @@index([level])
   @@index([isAdmin])
@@ -63,7 +63,7 @@ model Course {
   materials        Material[]
   pastQuestions    PastQuestion[]
   timetableEntries TimetableEntry[]
-  chatSessions     ChatSession[]    // Add relation to chat sessions
+  chatSessions     ChatSession[]
 
   @@index([level])
   @@index([semester])
@@ -90,9 +90,9 @@ model Material {
   fileUrl               String
   courseId              String
   uploadedById          String
-  processed             Boolean          @default(false) // Track if PDF has been processed for RAG
-  processingStatus      String           @default("pending") // pending, queued, processing, completed, failed
-  processingError       String?          // Store error message if failed
+  processed             Boolean          @default(false)
+  processingStatus      String           @default("pending")
+  processingError       String?
   chunksCount           Int              @default(0)
   processingStartedAt   DateTime?
   processingCompletedAt DateTime?
@@ -100,8 +100,8 @@ model Material {
   updatedAt             DateTime         @updatedAt
   course                Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   uploadedBy            User             @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  chunks                MaterialChunk[]  // Add relation to chunks
-  processingQueue       ProcessingQueue? // Add relation to processing queue
+  chunks                MaterialChunk[]
+  processingQueue       ProcessingQueue?
 
   @@index([processingStatus])
   @@index([courseId])
@@ -112,15 +112,15 @@ model Material {
 }
 
 model MaterialChunk {
-  id           String   @id @default(cuid())
-  materialId   String
-  content      String   @db.Text // The actual text chunk
-  embedding    Float[]  // Vector embedding (stored as array)
-  chunkIndex   Int      // Order in the document
-  pageNumber   Int?     // Page number in the PDF
-  metadata     Json?    // Additional metadata (headers, formatting, etc.)
-  createdAt    DateTime @default(now())
-  material     Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  materialId String
+  content    String   @db.Text
+  embedding  Float[]
+  chunkIndex Int
+  pageNumber Int?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@index([materialId])
   @@index([chunkIndex])
@@ -131,7 +131,7 @@ model MaterialChunk {
 model ProcessingQueue {
   id          String    @id @default(cuid())
   materialId  String    @unique
-  status      String    @default("pending") // pending, processing, completed, failed
+  status      String    @default("pending")
   attempts    Int       @default(0)
   maxAttempts Int       @default(3)
   error       String?   @db.Text
@@ -150,7 +150,7 @@ model ChatSession {
   id        String        @id @default(cuid())
   userId    String
   courseId  String?
-  title     String?       // Optional session title
+  title     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   messages  ChatMessage[]
@@ -164,14 +164,14 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id          String      @id @default(cuid())
-  sessionId   String
-  content     String      @db.Text
-  role        String      // "user" or "assistant"
-  sources     String[]    // References to material chunks used (chunk IDs)
-  metadata    Json?       // Additional metadata (confidence scores, etc.)
-  createdAt   DateTime    @default(now())
-  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  sessionId String
+  content   String      @db.Text
+  role      String
+  sources   String[]
+  metadata  Json?
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([role])
@@ -294,23 +294,30 @@ model AIAssistantChat {
 }
 
 model ActivityLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  details   String?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  endpoint   String?
+  method     String?
+  statusCode Int?
+  duration   Int?
+  error      String?  @db.Text
+  createdAt  DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([action])
   @@index([ipAddress])
+  @@index([endpoint])
+  @@index([statusCode])
   @@map("activity_logs")
 }
 
 model RateLimit {
   id        String   @id @default(cuid())
-  key       String   @unique // IP address or user ID
+  key       String   @unique
   count     Int      @default(0)
   resetAt   DateTime
   createdAt DateTime @default(now())
@@ -324,11 +331,11 @@ model RateLimit {
 model IPBlock {
   id          String    @id @default(cuid())
   ipAddress   String    @unique
-  reason      String    // Reason for blocking (e.g., "repeated_auth_failures")
+  reason      String
   blockedAt   DateTime  @default(now())
-  expiresAt   DateTime? // Null for permanent blocks
+  expiresAt   DateTime?
   isActive    Boolean   @default(true)
-  failedCount Int       @default(0) // Track number of failed attempts
+  failedCount Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

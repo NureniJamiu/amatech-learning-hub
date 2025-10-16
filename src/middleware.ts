@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAuthToken } from "@/utils/token";
+import { MaintenanceMode } from "@/lib/maintenance-mode";
 
 /**
  * Base64 URL decode helper (for token inspection)
@@ -19,6 +20,9 @@ const adminRoutes = ["/admin"];
 
 // API routes that don't require authentication
 const publicApiRoutes = ["/api/v1/auth/login", "/api/v1/auth/signup", "/api/health"];
+
+// Routes that are accessible during maintenance mode
+const maintenanceExemptRoutes = ["/api/health", "/maintenance"];
 
 // Maximum number of redirects before breaking the loop
 const MAX_REDIRECT_COUNT = 3;
@@ -166,6 +170,59 @@ export async function middleware(request: NextRequest) {
     // Skip middleware for static files and Next.js internals
     if (isStaticAsset(pathname)) {
         return NextResponse.next();
+    }
+
+    // Check maintenance mode (before authentication)
+    // Allow health check and maintenance page during maintenance
+    const isMaintenanceExempt = maintenanceExemptRoutes.some((route) => 
+        pathname.startsWith(route)
+    );
+
+    if (!isMaintenanceExempt) {
+        const maintenanceEnabled = await MaintenanceMode.isEnabled();
+        
+        if (maintenanceEnabled) {
+            // Extract token to check if user is admin
+            const token = extractToken(request);
+            let isAdmin = false;
+
+            if (token) {
+                try {
+                    const decoded = await verifyAuthToken(token);
+                    if (decoded) {
+                        // Check if user is admin
+                        isAdmin = await MaintenanceMode.isUserAllowed(decoded.userId);
+                    }
+                } catch (error) {
+                    // Token verification failed, user is not admin
+                    isAdmin = false;
+                }
+            }
+
+            // If not admin, return maintenance response
+            if (!isAdmin) {
+                if (isApi) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: 'System is under maintenance',
+                            code: 'MAINTENANCE_MODE',
+                            message: 'The system is currently under maintenance. Please try again later.',
+                            timestamp: new Date().toISOString(),
+                        },
+                        { 
+                            status: 503,
+                            headers: {
+                                'Retry-After': '3600', // Suggest retry after 1 hour
+                            },
+                        }
+                    );
+                } else {
+                    // Redirect to maintenance page
+                    return NextResponse.redirect(new URL('/maintenance', request.url));
+                }
+            }
+        }
     }
 
     // Check if it's a public route

@@ -17,7 +17,7 @@ const envSchema = z.object({
   
   // Grok API (Primary AI provider)
   GROK_API_KEY: z.string()
-    .startsWith('xai-', 'GROK_API_KEY must start with "xai-"')
+    .startsWith('gsk_', 'GROK_API_KEY must start with "gsk_"')
     .min(10, 'GROK_API_KEY appears to be invalid'),
   GROK_API_BASE_URL: z.string().url('GROK_API_BASE_URL must be a valid URL').default('https://api.x.ai/v1'),
   
@@ -106,45 +106,133 @@ export function isTest(): boolean {
 }
 
 /**
- * Redact sensitive data from logs
+ * Sensitive keys that should be redacted in logs
+ */
+const SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'apikey',
+  'api_key',
+  'authorization',
+  'jwt',
+  'bearer',
+  'auth',
+  'credential',
+  'private',
+  'key',
+];
+
+/**
+ * Patterns for sensitive data in strings
+ */
+const SENSITIVE_PATTERNS = [
+  /xai-[a-zA-Z0-9]+/gi, // Grok API keys
+  /sk-[a-zA-Z0-9]+/gi, // OpenAI API keys
+  /Bearer\s+[a-zA-Z0-9\-._~+/]+=*/gi, // Bearer tokens
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, // Email addresses (optional)
+];
+
+/**
+ * Redact sensitive data from any value
  */
 export function redactSensitiveData(data: any): any {
-  if (typeof data !== 'object' || data === null) {
+  if (data === null || data === undefined) {
     return data;
   }
 
-  const sensitiveKeys = [
-    'password',
-    'token',
-    'secret',
-    'apiKey',
-    'api_key',
-    'authorization',
-    'jwt',
-    'bearer',
-  ];
+  // Handle strings
+  if (typeof data === 'string') {
+    return redactString(data);
+  }
 
-  const redacted = { ...data };
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map(item => redactSensitiveData(item));
+  }
 
-  for (const key in redacted) {
-    const lowerKey = key.toLowerCase();
-    
-    if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
-      if (typeof redacted[key] === 'string') {
+  // Handle objects
+  if (typeof data === 'object') {
+    const redacted: any = {};
+
+    for (const key in data) {
+      const lowerKey = key.toLowerCase();
+      
+      // Check if key is sensitive
+      if (SENSITIVE_KEYS.some(sensitive => lowerKey.includes(sensitive))) {
         redacted[key] = '[REDACTED]';
+      } else {
+        redacted[key] = redactSensitiveData(data[key]);
       }
-    } else if (typeof redacted[key] === 'object' && redacted[key] !== null) {
-      redacted[key] = redactSensitiveData(redacted[key]);
     }
+
+    return redacted;
+  }
+
+  return data;
+}
+
+/**
+ * Redact sensitive patterns from strings
+ */
+function redactString(str: string): string {
+  let redacted = str;
+
+  for (const pattern of SENSITIVE_PATTERNS) {
+    redacted = redacted.replace(pattern, '[REDACTED]');
   }
 
   return redacted;
 }
 
+/**
+ * Redact API keys from strings
+ * Shows first 4 and last 4 characters for debugging
+ */
+export function redactApiKey(apiKey: string): string {
+  if (!apiKey || apiKey.length < 12) {
+    return '[REDACTED]';
+  }
+
+  const prefix = apiKey.substring(0, 4);
+  const suffix = apiKey.substring(apiKey.length - 4);
+  const middle = '*'.repeat(Math.min(apiKey.length - 8, 20));
+
+  return `${prefix}${middle}${suffix}`;
+}
+
+/**
+ * Redact password - shows only length
+ */
+export function redactPassword(password: string): string {
+  if (!password) {
+    return '[REDACTED]';
+  }
+
+  return `[REDACTED:${password.length} chars]`;
+}
+
+/**
+ * Redact JWT token - shows header only
+ */
+export function redactToken(token: string): string {
+  if (!token) {
+    return '[REDACTED]';
+  }
+
+  const parts = token.split('.');
+  if (parts.length === 3) {
+    return `${parts[0]}.[REDACTED].[REDACTED]`;
+  }
+
+  return '[REDACTED]';
+}
+
 // Validate on module load (only in Node.js environment)
 if (typeof window === 'undefined') {
-  // Only validate if not in build process
-  if (process.env.NEXT_PHASE !== 'phase-production-build') {
+  // Only validate if not in build process or test script
+  const isTestScript = process.argv.some(arg => arg.includes('test-env-validation'));
+  if (process.env.NEXT_PHASE !== 'phase-production-build' && !isTestScript) {
     try {
       validateEnv();
     } catch (error) {

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getGrokClient } from '@/lib/grok-client';
 import { v2 as cloudinary } from 'cloudinary';
 import { processingQueue } from '@/lib/processing-queue';
+import { MaintenanceMode } from '@/lib/maintenance-mode';
 
 // Track application start time for uptime calculation
 const startTime = Date.now();
@@ -17,6 +18,7 @@ interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
   uptime: number;
+  maintenanceMode: boolean;
   services: {
     database: ServiceHealth;
     grok: ServiceHealth;
@@ -216,11 +218,12 @@ function determineOverallStatus(services: HealthStatus['services']): 'healthy' |
 export async function GET() {
   try {
     // Check all services in parallel for faster response
-    const [database, grok, cloudinary, queue] = await Promise.all([
+    const [database, grok, cloudinary, queue, maintenanceMode] = await Promise.all([
       checkDatabase(),
       checkGrok(),
       checkCloudinary(),
       checkQueue(),
+      MaintenanceMode.isEnabled(),
     ]);
 
     // Get queue statistics
@@ -231,6 +234,7 @@ export async function GET() {
       status: determineOverallStatus({ database, grok, cloudinary, queue }),
       timestamp: new Date().toISOString(),
       uptime: getUptime(),
+      maintenanceMode,
       services: {
         database,
         grok,
@@ -244,7 +248,9 @@ export async function GET() {
     };
 
     // Return appropriate status code based on health
-    const statusCode = healthStatus.status === 'healthy' ? 200 : 
+    // If in maintenance mode, return 503 even if services are healthy
+    const statusCode = maintenanceMode ? 503 :
+                       healthStatus.status === 'healthy' ? 200 : 
                        healthStatus.status === 'degraded' ? 200 : 503;
 
     return NextResponse.json(healthStatus, { status: statusCode });
@@ -256,6 +262,7 @@ export async function GET() {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         uptime: getUptime(),
+        maintenanceMode: false,
         error: error.message || 'Health check failed',
       },
       { status: 503 }
