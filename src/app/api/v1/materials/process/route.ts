@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
-import { ragPipeline } from "@/lib/rag-pipeline";
+import { getGrokRAGPipeline } from "@/lib/rag-pipeline-grok";
+import { GrokAPIError, RateLimitError, TimeoutError } from "@/lib/grok-client";
 
 const prisma = new PrismaClient();
 
 /**
- * Process a material for RAG by extracting text and generating embeddings
+ * Process a material for RAG by extracting text and generating embeddings using Grok
  */
 export async function POST(req: Request) {
+    let materialId: string | undefined;
+    
     try {
-        const { materialId } = await req.json();
+        const body = await req.json();
+        materialId = body.materialId;
 
         if (!materialId) {
             return NextResponse.json(
@@ -35,14 +39,21 @@ export async function POST(req: Request) {
             );
         }
 
-        // Update processing status
+        // Update processing status to "processing"
         await prisma.material.update({
             where: { id: materialId },
-            data: { processingStatus: "processing" },
+            data: { 
+                processingStatus: "processing",
+            },
         });
 
-        // Process PDF using enhanced RAG pipeline
-        const result = await ragPipeline.processPDFForRAG(
+        console.log(`[Material Processing] Starting processing for material: ${material.title}`);
+
+        // Get Grok RAG pipeline instance
+        const grokRagPipeline = getGrokRAGPipeline();
+
+        // Process PDF using Grok RAG pipeline
+        const result = await grokRagPipeline.processPDFForRAG(
             material.fileUrl,
             material.id,
             material.title,
@@ -50,45 +61,69 @@ export async function POST(req: Request) {
         );
 
         if (!result.success) {
+            console.error(`[Material Processing] Failed to process material: ${result.error}`);
+            
             return NextResponse.json(
                 {
                     success: false,
                     error: result.error || "PDF processing failed",
+                    materialId: material.id,
                 },
                 { status: 500 }
             );
         }
 
+        console.log(`[Material Processing] Successfully processed material: ${material.title} (${result.chunksCreated} chunks)`);
+
         return NextResponse.json({
             success: true,
-            message: "Material processed successfully",
+            message: "Material processed successfully using Grok",
             chunksCreated: result.chunksCreated,
+            materialId: material.id,
+            materialTitle: material.title,
         });
-    } catch (error) {
-        console.error("Material processing error:", error);
 
-        // Update status to failed if we have materialId
-        try {
-            const { materialId } = await req.json();
-            if (materialId) {
+    } catch (error) {
+        console.error("[Material Processing] Error:", error);
+
+        // Handle specific Grok API errors
+        let errorMessage = "Processing failed";
+        let statusCode = 500;
+
+        if (error instanceof RateLimitError) {
+            errorMessage = `Rate limit exceeded. Please try again in ${error.retryAfter || 60} seconds.`;
+            statusCode = 429;
+        } else if (error instanceof TimeoutError) {
+            errorMessage = "Request timed out. The PDF may be too large or the service is slow. Please try again.";
+            statusCode = 408;
+        } else if (error instanceof GrokAPIError) {
+            errorMessage = `Grok API error: ${error.message}`;
+            statusCode = error.statusCode || 500;
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
+        // Update material status to failed
+        if (materialId) {
+            try {
                 await prisma.material.update({
                     where: { id: materialId },
-                    data: { processingStatus: "failed" },
+                    data: { 
+                        processingStatus: "failed",
+                    },
                 });
+            } catch (updateError) {
+                console.error("[Material Processing] Failed to update material status:", updateError);
             }
-        } catch (updateError) {
-            console.error("Failed to update material status:", updateError);
         }
 
         return NextResponse.json(
             {
                 success: false,
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Processing failed",
+                error: errorMessage,
+                materialId,
             },
-            { status: 500 }
+            { status: statusCode }
         );
     }
 }

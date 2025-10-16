@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAuthToken } from "@/utils/token";
 
+/**
+ * Base64 URL decode helper (for token inspection)
+ */
+function base64UrlDecode(data: string): string {
+    const padding = "=".repeat((4 - (data.length % 4)) % 4);
+    const base64 = data.replace(/-/g, "+").replace(/_/g, "/") + padding;
+    return atob(base64);
+}
+
 // Routes that don't require authentication
 const publicRoutes = ["/", "/login", "/signup", "/forgot-password"];
 
@@ -9,14 +18,27 @@ const publicRoutes = ["/", "/login", "/signup", "/forgot-password"];
 const adminRoutes = ["/admin"];
 
 // API routes that don't require authentication
-const publicApiRoutes = ["/api/v1/auth/login", "/api/v1/auth/signup"];
+const publicApiRoutes = ["/api/v1/auth/login", "/api/v1/auth/signup", "/api/health"];
 
-export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-    const referer = request.headers.get("referer");
+// Maximum number of redirects before breaking the loop
+const MAX_REDIRECT_COUNT = 3;
 
-    // Skip middleware for static files and Next.js internals
-    if (
+// Cookie name for redirect loop prevention
+const REDIRECT_COOKIE_NAME = "x-redirect-count";
+const REDIRECT_COOKIE_MAX_AGE = 60; // 60 seconds
+
+/**
+ * Check if the request is for an API route
+ */
+function isApiRoute(pathname: string): boolean {
+    return pathname.startsWith("/api/");
+}
+
+/**
+ * Check if the request is for a static asset
+ */
+function isStaticAsset(pathname: string): boolean {
+    return (
         pathname.startsWith("/_next") ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/favicon") ||
@@ -29,14 +51,127 @@ export async function middleware(request: NextRequest) {
         pathname.includes(".gif") ||
         pathname.includes(".ico") ||
         pathname.includes(".css") ||
-        pathname.includes(".js")
-    ) {
+        pathname.includes(".js") ||
+        pathname.includes(".woff") ||
+        pathname.includes(".woff2") ||
+        pathname.includes(".ttf") ||
+        pathname.includes(".eot")
+    );
+}
+
+/**
+ * Get redirect count from cookie
+ */
+function getRedirectCount(request: NextRequest): number {
+    const count = request.cookies.get(REDIRECT_COOKIE_NAME)?.value;
+    return count ? parseInt(count, 10) : 0;
+}
+
+/**
+ * Create response with redirect count cookie
+ */
+function setRedirectCount(response: NextResponse, count: number): NextResponse {
+    response.cookies.set(REDIRECT_COOKIE_NAME, String(count), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: REDIRECT_COOKIE_MAX_AGE,
+        path: "/",
+    });
+    return response;
+}
+
+/**
+ * Clear redirect count cookie
+ */
+function clearRedirectCount(response: NextResponse): NextResponse {
+    response.cookies.delete(REDIRECT_COOKIE_NAME);
+    return response;
+}
+
+/**
+ * Handle missing or invalid token for API routes
+ */
+function handleApiAuthError(
+    message: string, 
+    statusCode: 401 | 403 = 401,
+    errorType: "MISSING_TOKEN" | "MALFORMED_TOKEN" | "EXPIRED_TOKEN" | "INVALID_TOKEN" | "FORBIDDEN" = "INVALID_TOKEN"
+): NextResponse {
+    return NextResponse.json(
+        {
+            success: false,
+            error: message,
+            code: statusCode === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
+            errorType,
+            timestamp: new Date().toISOString(),
+        },
+        { status: statusCode }
+    );
+}
+
+/**
+ * Handle missing or invalid token for page routes
+ */
+function handlePageAuthError(request: NextRequest, redirectCount: number): NextResponse {
+    const { pathname } = request.nextUrl;
+    
+    // If already on login page, allow access
+    if (pathname === "/login" || pathname === "/signup") {
+        return NextResponse.next();
+    }
+    
+    // Check for redirect loop
+    if (redirectCount >= MAX_REDIRECT_COUNT) {
+        console.error(`[Middleware] Redirect loop detected for ${pathname}`);
+        // Break the loop by allowing the request through
+        const response = NextResponse.next();
+        return clearRedirectCount(response);
+    }
+    
+    // Redirect to login with return URL
+    const loginUrl = new URL("/login", request.url);
+    if (pathname !== "/") {
+        loginUrl.searchParams.set("returnUrl", pathname);
+    }
+    
+    const response = NextResponse.redirect(loginUrl);
+    return setRedirectCount(response, redirectCount + 1);
+}
+
+/**
+ * Extract token from request (cookie or Authorization header)
+ */
+function extractToken(request: NextRequest): string | null {
+    // Try cookie first
+    const cookieToken = request.cookies.get("token")?.value;
+    if (cookieToken) {
+        return cookieToken;
+    }
+    
+    // Try Authorization header
+    const authHeader = request.headers.get("authorization");
+    if (authHeader) {
+        // Support both "Bearer <token>" and just "<token>"
+        const match = authHeader.match(/^Bearer\s+(.+)$/i);
+        return match ? match[1] : authHeader;
+    }
+    
+    return null;
+}
+
+export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+    const isApi = isApiRoute(pathname);
+
+    // Skip middleware for static files and Next.js internals
+    if (isStaticAsset(pathname)) {
         return NextResponse.next();
     }
 
     // Check if it's a public route
     if (publicRoutes.includes(pathname)) {
-        return NextResponse.next();
+        const response = NextResponse.next();
+        return clearRedirectCount(response);
     }
 
     // Check if it's a public API route
@@ -44,74 +179,127 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Detect potential redirect loops - if we've been redirected multiple times
-    const redirectCount = parseInt(
-        request.headers.get("x-redirect-count") || "0"
-    );
-    if (redirectCount > 2) {
-        return NextResponse.next();
+    // Get redirect count for loop prevention
+    const redirectCount = getRedirectCount(request);
+    
+    // Log authentication attempts for debugging (only in development)
+    if (process.env.NODE_ENV === "development") {
+        console.log(`[Middleware] ${isApi ? "API" : "Page"} request to ${pathname}, redirect count: ${redirectCount}`);
     }
 
-    // Get token from cookies or authorization header
-    const token =
-        request.cookies.get("token")?.value ||
-        request.headers.get("authorization")?.replace("Bearer ", "");
+    // Extract token from request
+    const token = extractToken(request);
 
-    // If no token, redirect to login
+    // If no token, handle authentication error
     if (!token) {
-        if (pathname.startsWith("/api/")) {
-            return NextResponse.json(
-                { message: "Unauthorized" },
-                { status: 401 }
+        if (isApiRoute(pathname)) {
+            return handleApiAuthError(
+                "Authentication required. Please provide a valid token.",
+                401,
+                "MISSING_TOKEN"
             );
         }
-        // Prevent redirect if already on login page
-        if (pathname === "/login") {
-            return NextResponse.next();
+        return handlePageAuthError(request, redirectCount);
+    }
+
+    // Validate token format before verification
+    const tokenParts = token.split(".");
+    if (tokenParts.length !== 3) {
+        if (isApiRoute(pathname)) {
+            return handleApiAuthError(
+                "Malformed token. Token must be a valid JWT.",
+                401,
+                "MALFORMED_TOKEN"
+            );
         }
-        const response = NextResponse.redirect(new URL("/login", request.url));
-        response.headers.set("x-redirect-count", String(redirectCount + 1));
-        return response;
+        return handlePageAuthError(request, redirectCount);
     }
 
     // Verify token
-    const decoded = await verifyAuthToken(token);
+    let decoded;
+    let tokenError: "EXPIRED" | "INVALID" | null = null;
+    
+    try {
+        decoded = await verifyAuthToken(token);
+        
+        // Check if token is expired by examining the payload
+        if (!decoded) {
+            try {
+                const payload = JSON.parse(base64UrlDecode(tokenParts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                if (payload.exp && payload.exp < now) {
+                    tokenError = "EXPIRED";
+                } else {
+                    tokenError = "INVALID";
+                }
+            } catch {
+                tokenError = "INVALID";
+            }
+        }
+    } catch (error) {
+        console.error("[Middleware] Token verification error:", error);
+        decoded = null;
+        tokenError = "INVALID";
+    }
 
+    // Handle invalid or expired token
     if (!decoded) {
-        if (pathname.startsWith("/api/")) {
-            return NextResponse.json(
-                { message: "Invalid token" },
-                { status: 401 }
+        if (isApiRoute(pathname)) {
+            if (tokenError === "EXPIRED") {
+                return handleApiAuthError(
+                    "Token has expired. Please log in again.",
+                    401,
+                    "EXPIRED_TOKEN"
+                );
+            }
+            return handleApiAuthError(
+                "Invalid token. Please log in again.",
+                401,
+                "INVALID_TOKEN"
             );
         }
-        // Prevent redirect if already on login page
-        if (pathname === "/login") {
-            return NextResponse.next();
-        }
-        const response = NextResponse.redirect(new URL("/login", request.url));
-        response.headers.set("x-redirect-count", String(redirectCount + 1));
-        return response;
+        return handlePageAuthError(request, redirectCount);
     }
+
+    // Token is valid - clear redirect count
+    const response = NextResponse.next();
+    clearRedirectCount(response);
 
     // If user is authenticated and trying to access auth pages, redirect to dashboard
-    // But only if the request is not coming from a redirect to prevent loops
-    if (
-        (pathname === "/login" || pathname === "/signup") &&
-        !referer?.includes("/login") &&
-        !referer?.includes("/signup") &&
-        redirectCount < 2
-    ) {
-        const response = NextResponse.redirect(
-            new URL("/dashboard", request.url)
-        );
-        response.headers.set("x-redirect-count", String(redirectCount + 1));
-        return response;
+    if (pathname === "/login" || pathname === "/signup") {
+        // Check for redirect loop
+        if (redirectCount >= MAX_REDIRECT_COUNT) {
+            console.error(`[Middleware] Redirect loop detected on auth page ${pathname}`);
+            return response;
+        }
+        
+        const dashboardResponse = NextResponse.redirect(new URL("/dashboard", request.url));
+        return setRedirectCount(dashboardResponse, redirectCount + 1);
     }
 
-    // For admin routes, we'd need to check if user is admin
-    // This would require a database call, so we'll handle it in the component level
+    // Check admin routes - verify user has admin privileges
+    if (adminRoutes.some((route) => pathname.startsWith(route))) {
+        // For admin routes, we need to check if user is admin
+        // This requires a database lookup, which we'll handle in the API route
+        // For now, we'll pass the request through and let the route handle authorization
+        // Add a header to indicate this is an admin route
+        response.headers.set("x-admin-route", "true");
+    }
 
-    return NextResponse.next();
+    // Add user info to request headers for downstream use
+    response.headers.set("x-user-id", decoded.userId);
+    
+    // Add token expiration info for potential refresh logic
+    try {
+        const payload = JSON.parse(base64UrlDecode(tokenParts[1]));
+        if (payload.exp) {
+            response.headers.set("x-token-exp", String(payload.exp));
+        }
+    } catch {
+        // Ignore parsing errors
+    }
+
+    return response;
 }
 
 export const config = {

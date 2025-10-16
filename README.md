@@ -53,7 +53,7 @@ Built to centralize academic resources and provide Project Management Technology
 - **Authentication**: JWT (Custom implementation)
 - **File Storage**: Cloudinary
 - **Vector Database**: Pinecone
-- **AI**: OpenAI & LangChain
+- **AI**: Grok (xAI) & LangChain (OpenAI deprecated)
 
 ### Development Tools
 - **Language**: TypeScript
@@ -98,7 +98,11 @@ Before you begin, ensure you have the following installed:
    CLOUDINARY_API_KEY="your-cloudinary-api-key"
    CLOUDINARY_API_SECRET="your-cloudinary-api-secret"
 
-   # OpenAI (for AI features)
+   # Grok API (xAI - Free API for AI features)
+   GROK_API_KEY="your-grok-api-key"  # Get from https://x.ai/api
+   GROK_API_BASE_URL="https://api.x.ai/v1"
+
+   # OpenAI (DEPRECATED - use Grok instead)
    OPENAI_API_KEY="your-openai-api-key"
 
    # Pinecone (for vector database)
@@ -178,9 +182,19 @@ The application uses Prisma ORM with PostgreSQL. Configure your database connect
 
 ### AI Features Setup
 To enable AI features:
-1. Set up an OpenAI account and get your API key
-2. Create a Pinecone account for vector database
-3. Configure the environment variables accordingly
+1. **Grok API (Primary - Free)**:
+   - Sign up at [https://x.ai/api](https://x.ai/api)
+   - Generate an API key (format: `xai-...`)
+   - Add `GROK_API_KEY` to your `.env` file
+   - Test connection: `pnpm tsx scripts/test-grok-connection.ts`
+
+2. **Pinecone (Vector Database)**:
+   - Create a Pinecone account for vector database
+   - Configure the environment variables accordingly
+
+3. **OpenAI (Legacy - Optional)**:
+   - Only needed for backward compatibility
+   - Can be removed once migration is complete
 
 ### File Upload Setup
 Configure Cloudinary for handling file uploads:

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateRequest } from "@/middleware/auth.middleware";
+import { processingQueue } from "@/lib/processing-queue";
 
 interface Params {
   params: {
@@ -103,13 +104,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ message: "Course not found" }, { status: 404 });
     }
 
-    // Create the material
+    // Create the material with queued status
     const material = await prisma.material.create({
       data: {
         title,
         fileUrl,
         courseId,
         uploadedById: authUser.userId,
+        processingStatus: 'pending', // Will be updated to 'queued' when added to queue
       },
       include: {
         course: {
@@ -129,7 +131,25 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
     });
 
-    return NextResponse.json(material, { status: 201 });
+    // Add to processing queue
+    try {
+      await processingQueue.addJob({
+        materialId: material.id,
+        fileUrl,
+        materialTitle: title,
+        courseId,
+      });
+
+      console.log(`Material ${material.id} added to processing queue`);
+    } catch (queueError) {
+      console.error('Error adding material to queue:', queueError);
+      // Material is created but not queued - can be retried later
+    }
+
+    return NextResponse.json({
+      ...material,
+      message: 'Material uploaded successfully and queued for processing',
+    }, { status: 201 });
   } catch (error) {
     console.error("Error adding course material:", error);
     return NextResponse.json(

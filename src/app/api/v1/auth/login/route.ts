@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { comparePasswords } from "@/utils/hash";
 import { generateAuthToken } from "@/utils/token";
+import { SessionManager } from "@/lib/session-manager";
 
 export async function POST(req: NextRequest) {
   console.log("Login route hit");
@@ -44,6 +45,15 @@ export async function POST(req: NextRequest) {
     console.log("Token length:", token?.length);
     console.log("Token preview:", token?.substring(0, 20) + "...");
     console.log("User ID for token:", user.id);
+
+    // Create session in database
+    try {
+      await SessionManager.createSession(user.id, token, 15);
+      console.log("Session created in database");
+    } catch (sessionError) {
+      console.error("Failed to create session in database:", sessionError);
+      // Continue anyway - session tracking is not critical for login
+    }
 
     const response = NextResponse.json({
         token,

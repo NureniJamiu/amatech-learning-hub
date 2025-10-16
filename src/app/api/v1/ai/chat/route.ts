@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/app/generated/prisma';
-import { ragPipeline, ChatHistory } from "@/lib/rag-pipeline";
+import { getGrokRAGPipeline, ChatHistory } from "@/lib/rag-pipeline-grok";
+import { GrokAPIError, RateLimitError, TimeoutError } from "@/lib/grok-client";
 
 const prisma = new PrismaClient();
 
 /**
- * Process AI chat query using enhanced RAG pipeline
+ * Process AI chat query using Grok-powered RAG pipeline
  */
 export async function POST(req: Request) {
     try {
@@ -14,6 +15,14 @@ export async function POST(req: Request) {
         if (!message || !userId) {
             return NextResponse.json(
                 { success: false, error: "Message and user ID are required" },
+                { status: 400 }
+            );
+        }
+
+        // Validate message length
+        if (message.length > 2000) {
+            return NextResponse.json(
+                { success: false, error: "Message is too long. Please keep it under 2000 characters." },
                 { status: 400 }
             );
         }
@@ -69,14 +78,19 @@ export async function POST(req: Request) {
             }
         }
 
-        // Process query with enhanced RAG pipeline
-        const ragResult = await ragPipeline.queryWithHistory(
+        console.log(`[AI Chat] Processing query for user ${userId}, session ${session.id}`);
+
+        // Get Grok RAG pipeline instance
+        const grokRagPipeline = getGrokRAGPipeline();
+
+        // Process query with Grok RAG pipeline
+        const ragResult = await grokRagPipeline.queryWithHistory(
             message,
             chatHistory,
             courseId || undefined
         );
 
-        // Save AI response
+        // Save AI response with source citations
         const aiMessage = await prisma.chatMessage.create({
             data: {
                 sessionId: session.id,
@@ -92,31 +106,58 @@ export async function POST(req: Request) {
                         content: doc.content.substring(0, 200),
                         chunkIndex: doc.metadata.chunkIndex,
                         materialId: doc.metadata.materialId,
+                        relevanceScore: doc.relevanceScore,
                     })),
                     followUpQuestions: ragResult.followUpQuestions,
+                    model: 'grok',
                 },
             },
         });
+
+        console.log(`[AI Chat] Successfully generated response for session ${session.id}`);
 
         return NextResponse.json({
             success: true,
             sessionId: session.id,
             messageId: aiMessage.id,
             response: ragResult.answer,
-            sourceDocuments: ragResult.sourceDocuments,
+            sourceDocuments: ragResult.sourceDocuments.map(doc => ({
+                materialTitle: doc.metadata.materialTitle,
+                materialId: doc.metadata.materialId,
+                chunkIndex: doc.metadata.chunkIndex,
+                content: doc.content.substring(0, 200) + '...',
+                relevanceScore: doc.relevanceScore,
+            })),
             followUpQuestions: ragResult.followUpQuestions,
+            model: 'grok',
         });
+
     } catch (error) {
-        console.error("Chat query error:", error);
+        console.error("[AI Chat] Error:", error);
+
+        // Handle specific Grok API errors with graceful fallback
+        let errorMessage = "Query processing failed";
+        let statusCode = 500;
+
+        if (error instanceof RateLimitError) {
+            errorMessage = "The AI service is experiencing high demand. Please try again in a moment.";
+            statusCode = 429;
+        } else if (error instanceof TimeoutError) {
+            errorMessage = "The request timed out. Please try again with a shorter question.";
+            statusCode = 408;
+        } else if (error instanceof GrokAPIError) {
+            errorMessage = "The AI service is temporarily unavailable. Please try again later.";
+            statusCode = 503;
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
         return NextResponse.json(
             {
                 success: false,
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Query processing failed",
+                error: errorMessage,
             },
-            { status: 500 }
+            { status: statusCode }
         );
     }
 }

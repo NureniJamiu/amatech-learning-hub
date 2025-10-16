@@ -78,19 +78,26 @@ model CourseToTutor {
 }
 
 model Material {
-  id           String          @id @default(cuid())
-  title        String
-  fileUrl      String
-  courseId     String
-  uploadedById String
-  processed    Boolean         @default(false) // Track if PDF has been processed for RAG
-  processingStatus String      @default("pending") // pending, processing, completed, failed
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  course       Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy   User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  chunks       MaterialChunk[] // Add relation to chunks
+  id                    String           @id @default(cuid())
+  title                 String
+  fileUrl               String
+  courseId              String
+  uploadedById          String
+  processed             Boolean          @default(false) // Track if PDF has been processed for RAG
+  processingStatus      String           @default("pending") // pending, queued, processing, completed, failed
+  processingError       String?          // Store error message if failed
+  chunksCount           Int              @default(0)
+  processingStartedAt   DateTime?
+  processingCompletedAt DateTime?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  course                Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy            User             @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  chunks                MaterialChunk[]  // Add relation to chunks
+  processingQueue       ProcessingQueue? // Add relation to processing queue
 
+  @@index([processingStatus])
+  @@index([courseId])
   @@map("materials")
 }
 
@@ -108,6 +115,24 @@ model MaterialChunk {
   @@index([materialId])
   @@index([chunkIndex])
   @@map("material_chunks")
+}
+
+model ProcessingQueue {
+  id          String    @id @default(cuid())
+  materialId  String    @unique
+  status      String    @default("pending") // pending, processing, completed, failed
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+  material    Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("processing_queue")
 }
 
 model ChatSession {
