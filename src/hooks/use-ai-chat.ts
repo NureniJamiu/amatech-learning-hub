@@ -33,6 +33,7 @@ export interface ChatSession {
 export interface SendMessageData {
   message: string;
   courseId?: string;
+  materialId?: string;
   sessionId?: string;
   userId: string;
 }
@@ -131,7 +132,7 @@ export function useChatSessions(userId?: string) {
 /**
  * Hook for managing chat state
  */
-export function useChat(userId?: string, courseId?: string) {
+export function useChat(userId?: string, courseId?: string, materialId?: string) {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -158,6 +159,7 @@ export function useChat(userId?: string, courseId?: string) {
       const result = await sendMessageMutation.mutateAsync({
         message,
         courseId,
+        materialId,
         sessionId: currentSessionId,
         userId,
       });

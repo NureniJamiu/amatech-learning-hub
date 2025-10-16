@@ -58,7 +58,7 @@ export class GrokRAGPipeline {
       chunkSize: config?.chunkSize || 1000,
       chunkOverlap: config?.chunkOverlap || 200,
       maxContextLength: config?.maxContextLength || 8000,
-      similarityThreshold: config?.similarityThreshold || 0.7,
+      similarityThreshold: config?.similarityThreshold || 0.3, // Lowered from 0.7 to 0.3 for better recall
       maxResults: config?.maxResults || 5,
     };
   }
@@ -250,7 +250,7 @@ export class GrokRAGPipeline {
    */
   private async findRelevantChunks(
     query: string,
-    courseId?: string
+    filterBy?: string
   ): Promise<Array<{
     content: string;
     metadata: DocumentChunk['metadata'];
@@ -265,7 +265,24 @@ export class GrokRAGPipeline {
       const queryEmbedding = queryResponse.data[0].embedding;
 
       // Get chunks from database
-      const whereClause = courseId ? { material: { courseId } } : {};
+      // filterBy can be either materialId or courseId
+      let whereClause = {};
+      if (filterBy) {
+        // Check if it's a materialId (starts with material ID pattern) or courseId
+        // Try materialId first
+        const materialExists = await prisma.material.findUnique({
+          where: { id: filterBy },
+          select: { id: true }
+        });
+        
+        if (materialExists) {
+          whereClause = { materialId: filterBy };
+          console.log(`[Grok RAG] Filtering by materialId: ${filterBy}`);
+        } else {
+          whereClause = { material: { courseId: filterBy } };
+          console.log(`[Grok RAG] Filtering by courseId: ${filterBy}`);
+        }
+      }
 
       const chunks = await prisma.materialChunk.findMany({
         where: whereClause,
@@ -280,6 +297,8 @@ export class GrokRAGPipeline {
           }
         }
       });
+
+      console.log(`[Grok RAG] Found ${chunks.length} chunks in database`);
 
       if (chunks.length === 0) {
         throw new Error("No processed materials found");
@@ -302,11 +321,18 @@ export class GrokRAGPipeline {
         };
       });
 
-      // Sort by similarity and filter by threshold
-      return chunksWithSimilarity
-        .filter(chunk => chunk.relevanceScore >= this.config.similarityThreshold)
-        .sort((a, b) => b.relevanceScore - a.relevanceScore)
-        .slice(0, this.config.maxResults);
+      // Sort by similarity
+      const sortedChunks = chunksWithSimilarity.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      
+      // Log top similarities for debugging
+      console.log(`[Grok RAG] Top 5 similarity scores:`, sortedChunks.slice(0, 5).map(c => c.relevanceScore.toFixed(3)));
+      console.log(`[Grok RAG] Similarity threshold: ${this.config.similarityThreshold}`);
+      
+      // Filter by threshold
+      const filteredChunks = sortedChunks.filter(chunk => chunk.relevanceScore >= this.config.similarityThreshold);
+      console.log(`[Grok RAG] Chunks passing threshold: ${filteredChunks.length}`);
+      
+      return filteredChunks.slice(0, this.config.maxResults);
 
     } catch (error) {
       console.error('[Grok RAG] Error finding relevant chunks:', error);
@@ -455,13 +481,16 @@ Generate 3 specific, educational follow-up questions that would help the student
   async queryWithHistory(
     question: string,
     chatHistory: ChatHistory[] = [],
-    courseId?: string
+    filterBy?: string
   ): Promise<RAGResponse> {
     try {
       console.log(`[Grok RAG] Processing query: ${question.substring(0, 50)}...`);
+      if (filterBy) {
+        console.log(`[Grok RAG] Filter parameter: ${filterBy}`);
+      }
 
       // Find relevant chunks
-      const relevantChunks = await this.findRelevantChunks(question, courseId);
+      const relevantChunks = await this.findRelevantChunks(question, filterBy);
 
       if (relevantChunks.length === 0) {
         return {

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Send, X, BookOpen, Clock, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Send, X, BookOpen, Clock, Sparkles, FileText, AlertCircle, Bot, User as UserIcon } from "lucide-react";
 
 import { useCurrentUser } from "@/hooks/use-auth";
-import { useCourses } from "@/hooks/use-courses";
+import { useMaterials } from "@/hooks/use-materials";
 import { useChat } from "@/hooks/use-ai-chat";
 import type { ChatMessage } from "@/hooks/use-ai-chat";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,29 +27,35 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function AIAssistantView() {
-    const [selectedCourse, setSelectedCourse] = useState<string>("all");
+    const [selectedMaterial, setSelectedMaterial] = useState<string>("");
     const [message, setMessage] = useState("");
-    const [showHelp, setShowHelp] = useState(true);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [showNoSelectionWarning, setShowNoSelectionWarning] = useState(false);
+
+    // Ref for auto-scrolling to bottom of messages
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const { data: user } = useCurrentUser();
-    const { data: coursesResponse } = useCourses({
-        search: undefined,
+    const { data: materialsResponse } = useMaterials({
         limit: 100,
     });
 
-    const courses = coursesResponse?.courses || [];
+    const materials = materialsResponse?.materials || [];
 
-    // Filter courses by user's level and semester if available
-    const userCourses = user
-        ? courses.filter(
-              (course) =>
-                  course.level === user.level &&
-                  (!user.currentSemester ||
-                      course.semester === user.currentSemester)
-          )
-        : courses;
+    // Filter only processed materials
+    const processedMaterials = materials.filter(
+        (material) => material.processed && material.processingStatus === "completed"
+    );
+
+    // Get the selected material data
+    const selectedMaterialData = processedMaterials.find(m => m.id === selectedMaterial);
+
+    // Extract courseId and materialId from selected material for the chat hook
+    const courseIdForChat = selectedMaterialData?.courseId;
+    const materialIdForChat = selectedMaterial;
 
     const {
         messages,
@@ -62,11 +68,29 @@ export function AIAssistantView() {
         loadSession,
     } = useChat(
         user?.id,
-        selectedCourse === "all" ? undefined : selectedCourse
+        courseIdForChat,
+        materialIdForChat
     );
 
     const handleSendMessage = async () => {
         if (!message.trim() || !user) return;
+
+        // Check if material is selected
+        if (!selectedMaterial) {
+            setShowNoSelectionWarning(true);
+            return;
+        }
+
+        setShowNoSelectionWarning(false);
+
+        // Debug logging
+        console.log('[AI Assistant] Sending message with:', {
+            materialId: selectedMaterial,
+            materialTitle: selectedMaterialData?.title,
+            courseId: courseIdForChat,
+            courseName: selectedMaterialData?.course.title,
+            chunksCount: selectedMaterialData?.chunksCount,
+        });
 
         await sendMessage(message);
         setMessage("");
@@ -79,367 +103,438 @@ export function AIAssistantView() {
         }
     };
 
-    // Initialize with welcome message
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
-        if (messages.length === 0 && user && !currentSessionId) {
-            // Show welcome message based on course selection
-            const welcomeMessages: ChatMessage[] = [
-                {
-                    id: "welcome-1",
-                    content:
-                        selectedCourse === "all"
-                            ? `Hello ${user.name}! I'm your AI learning assistant. I can help you with questions about your course materials. Select a specific course to get more targeted help, or ask me general questions about your studies.`
-                            : `Hello ${user.name}! I'm ready to help you with ${
-                                  courses.find((c) => c.id === selectedCourse)
-                                      ?.code || "your selected course"
-                              }. Ask me anything about the course materials!`,
-                    role: "assistant" as const,
-                    createdAt: new Date().toISOString(),
-                },
-            ];
-        }
-    }, [selectedCourse, user, messages.length, currentSessionId, courses]);
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isTyping]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 sm:p-6">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="w-full sm:w-auto">
-                            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                                AI Learning Assistant
-                            </CardTitle>
-                            <CardDescription className="text-sm">
-                                Ask questions about your course materials and
-                                get instant help
-                            </CardDescription>
-                        </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            {currentSessionId && (
+        <div className="flex flex-col lg:flex-row gap-4 p-4 sm:p-6 h-[calc(100vh-8rem)]">
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col min-w-0">
+                <Card className="flex-1 flex flex-col">
+                    <CardHeader className="border-b">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-br from-blue-500 to-green-600 rounded-lg">
+                                    <Bot className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg">AI Learning Assistant</CardTitle>
+                                    <CardDescription className="text-xs">
+                                        {selectedMaterialData
+                                            ? `Chatting about: ${selectedMaterialData.title}`
+                                            : "Select a material to start learning"
+                                        }
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                {currentSessionId && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={startNewSession}
+                                    >
+                                        New Chat
+                                    </Button>
+                                )}
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     size="sm"
-                                    onClick={startNewSession}
-                                    className="flex-1 sm:flex-none"
+                                    onClick={() => setShowSidebar(!showSidebar)}
+                                    className="lg:hidden"
                                 >
-                                    New Chat
+                                    {showSidebar ? <X className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                                 </Button>
-                            )}
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Select
-                            value={selectedCourse}
-                            onValueChange={setSelectedCourse}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a course to focus on" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Courses</SelectItem>
-                                {userCourses.map((course) => (
-                                    <SelectItem
-                                        key={course.id}
-                                        value={course.id}
-                                    >
-                                        {course.code} - {course.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {selectedCourse !== "all" && (
-                            <p className="text-xs text-muted-foreground">
-                                Questions will be answered using materials from
-                                this course
-                            </p>
-                        )}
-                    </div>
-                    <ScrollArea className="h-[300px] sm:h-[400px] pr-2 sm:pr-4">
-                        <div className="space-y-3 sm:space-y-4">
-                            {messages.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    className={`flex ${
-                                        msg.role === "user"
-                                            ? "justify-end"
-                                            : "justify-start"
-                                    }`}
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col p-0">
+                        {/* Material Selection */}
+                        <div className="p-4 border-b bg-muted/30">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Select Processed Material
+                                </label>
+                                <Select
+                                    value={selectedMaterial}
+                                    onValueChange={(value) => {
+                                        setSelectedMaterial(value);
+                                        setShowNoSelectionWarning(false);
+                                    }}
                                 >
-                                    <div
-                                        className={`flex max-w-[90%] sm:max-w-[80%] items-start gap-2 rounded p-2 sm:p-3 ${
-                                            msg.role === "user"
-                                                ? "bg-primary text-primary-foreground"
-                                                : "bg-muted text-muted-foreground"
-                                        }`}
-                                    >
-                                        {msg.role === "assistant" && (
-                                            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
-                                                <AvatarFallback className="text-xs">
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Choose a material to query..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {processedMaterials.length === 0 ? (
+                                            <div className="p-4 text-sm text-muted-foreground text-center">
+                                                No processed materials available yet
+                                            </div>
+                                        ) : (
+                                            processedMaterials.map((material) => (
+                                                <SelectItem
+                                                    key={material.id}
+                                                    value={material.id}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="h-3 w-3" />
+                                                        <span className="truncate">{material.title}</span>
+                                                        <Badge variant="secondary" className="text-xs ml-auto">
+                                                            {material.course.code}
+                                                        </Badge>
+                                                    </div>
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                                {selectedMaterial && selectedMaterialData && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Badge variant="outline" className="text-xs">
+                                            {selectedMaterialData.chunksCount} chunks
+                                        </Badge>
+                                        <span>•</span>
+                                        <span>{selectedMaterialData.course.title}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Warning Alert */}
+                        {showNoSelectionWarning && (
+                            <div className="p-4">
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>
+                                        Please select a material first before asking questions. This helps me provide accurate answers based on your course content.
+                                    </AlertDescription>
+                                </Alert>
+                            </div>
+                        )}
+
+                        {/* Messages Area */}
+                        <ScrollArea className="flex-1 p-4">
+                            {messages.length === 0 && !selectedMaterial ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                    <div className="p-4 bg-gradient-to-br from-blue-500/10 to-green-600/10 rounded-full mb-4">
+                                        <Sparkles className="h-12 w-12 text-blue-500" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">Welcome to AI Learning Assistant</h3>
+                                    <p className="text-sm text-muted-foreground max-w-md mb-4">
+                                        Select a processed material from the dropdown above to start asking questions and get instant help with your studies.
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg mt-6">
+                                        <div className="p-3 border rounded-lg text-left">
+                                            <FileText className="h-5 w-5 text-blue-500 mb-2" />
+                                            <p className="text-xs font-medium">Material-Based Answers</p>
+                                            <p className="text-xs text-muted-foreground">Get responses based on your uploaded course materials</p>
+                                        </div>
+                                        <div className="p-3 border rounded-lg text-left">
+                                            <BookOpen className="h-5 w-5 text-green-500 mb-2" />
+                                            <p className="text-xs font-medium">Source Citations</p>
+                                            <p className="text-xs text-muted-foreground">See exactly where answers come from</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {messages.map((msg) => (
+                                        <div
+                                            key={msg.id}
+                                            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"
+                                                }`}
+                                        >
+                                            {msg.role === "assistant" && (
+                                                <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
+                                                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-600 text-white text-xs">
+                                                        AI
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                            <div
+                                                className={`flex flex-col max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"
+                                                    }`}
+                                            >
+                                                <div
+                                                    className={`rounded-2xl px-4 py-3 ${msg.role === "user"
+                                                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                                                        : "bg-muted border"
+                                                        }`}
+                                                >
+                                                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                                        {msg.content}
+                                                    </p>
+
+                                                    {/* Show sources if available */}
+                                                    {msg.sources && msg.sources.length > 0 && (
+                                                        <div className="mt-3 space-y-2">
+                                                            <p className="text-xs font-semibold opacity-80">
+                                                                📚 Sources:
+                                                            </p>
+                                                            {msg.sources.map((source) => (
+                                                                <div
+                                                                    key={source.chunkId}
+                                                                    className="text-xs bg-background/80 rounded-lg p-2 border"
+                                                                >
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <BookOpen className="h-3 w-3" />
+                                                                        <span className="font-medium truncate flex-1">
+                                                                            {source.materialTitle}
+                                                                        </span>
+                                                                        <Badge variant="secondary" className="text-xs">
+                                                                            {Math.round(source.similarity * 100)}%
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <p className="text-muted-foreground line-clamp-2">
+                                                                        {source.content}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Show follow-up suggestions */}
+                                                    {msg.metadata?.followUpSuggestions && (
+                                                        <div className="mt-3">
+                                                            <p className="text-xs font-semibold mb-2 opacity-80">
+                                                                💡 You might also ask:
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {msg.metadata.followUpSuggestions.map(
+                                                                    (suggestion: string, index: number) => (
+                                                                        <Button
+                                                                            key={index}
+                                                                            variant="secondary"
+                                                                            size="sm"
+                                                                            className="text-xs h-7 bg-background/80 hover:bg-background"
+                                                                            onClick={() => setMessage(suggestion)}
+                                                                        >
+                                                                            {suggestion}
+                                                                        </Button>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-muted-foreground mt-1 px-2">
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </span>
+                                            </div>
+                                            {msg.role === "user" && (
+                                                <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
+                                                    <AvatarFallback className="bg-blue-500 text-white text-xs">
+                                                        <UserIcon className="h-4 w-4" />
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {isTyping && (
+                                        <div className="flex gap-3 justify-start">
+                                            <Avatar className="h-8 w-8 flex-shrink-0 border-2 border-blue-500/20">
+                                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-green-600 text-white text-xs">
                                                     AI
                                                 </AvatarFallback>
                                             </Avatar>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="whitespace-pre-wrap text-sm sm:text-base">
-                                                {msg.content}
-                                            </p>
-
-                                            {/* Show sources if available */}
-                                            {msg.sources &&
-                                                msg.sources.length > 0 && (
-                                                    <div className="mt-2 space-y-1">
-                                                        <p className="text-xs font-semibold">
-                                                            Sources:
-                                                        </p>
-                                                        {msg.sources.map(
-                                                            (source, index) => (
-                                                                <div
-                                                                    key={
-                                                                        source.chunkId
-                                                                    }
-                                                                    className="text-xs bg-background/50 rounded p-2"
-                                                                >
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <BookOpen className="h-3 w-3 flex-shrink-0" />
-                                                                        <span className="font-medium truncate">
-                                                                            {
-                                                                                source.materialTitle
-                                                                            }
-                                                                        </span>
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="text-xs"
-                                                                        >
-                                                                            {Math.round(
-                                                                                source.similarity *
-                                                                                    100
-                                                                            )}
-                                                                            %
-                                                                            match
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <p className="mt-1 text-muted-foreground">
-                                                                        {
-                                                                            source.content
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            )
-                                                        )}
+                                            <div className="rounded-2xl px-4 py-3 bg-muted border">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex space-x-1">
+                                                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                                        <div
+                                                            className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"
+                                                            style={{ animationDelay: "0.1s" }}
+                                                        ></div>
+                                                        <div
+                                                            className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"
+                                                            style={{ animationDelay: "0.2s" }}
+                                                        ></div>
                                                     </div>
-                                                )}
-
-                                            {/* Show follow-up suggestions */}
-                                            {msg.metadata
-                                                ?.followUpSuggestions && (
-                                                <div className="mt-2">
-                                                    <p className="text-xs font-semibold mb-1">
-                                                        You might also ask:
-                                                    </p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {msg.metadata.followUpSuggestions.map(
-                                                            (
-                                                                suggestion: string,
-                                                                index: number
-                                                            ) => (
-                                                                <Button
-                                                                    key={index}
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="text-xs h-6"
-                                                                    onClick={() =>
-                                                                        setMessage(
-                                                                            suggestion
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {suggestion}
-                                                                </Button>
-                                                            )
-                                                        )}
-                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        AI is thinking...
+                                                    </span>
                                                 </div>
-                                            )}
-
-                                            <p className="mt-1 text-xs opacity-70">
-                                                {new Date(
-                                                    msg.createdAt
-                                                ).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {isTyping && (
-                                <div className="flex justify-start">
-                                    <div className="flex items-start gap-2 rounded p-2 sm:p-3 bg-muted text-muted-foreground">
-                                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                                            <AvatarFallback className="text-xs">
-                                                AI
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex items-center gap-1">
-                                            <div className="flex space-x-1">
-                                                <div className="h-2 w-2 bg-current rounded-full animate-bounce"></div>
-                                                <div
-                                                    className="h-2 w-2 bg-current rounded-full animate-bounce"
-                                                    style={{
-                                                        animationDelay: "0.1s",
-                                                    }}
-                                                ></div>
-                                                <div
-                                                    className="h-2 w-2 bg-current rounded-full animate-bounce"
-                                                    style={{
-                                                        animationDelay: "0.2s",
-                                                    }}
-                                                ></div>
                                             </div>
-                                            <span className="text-xs ml-2">
-                                                AI is thinking...
-                                            </span>
                                         </div>
-                                    </div>
+                                    )}
+                                    {/* Invisible div for auto-scroll */}
+                                    <div ref={messagesEndRef} />
                                 </div>
                             )}
-                        </div>
-                    </ScrollArea>
-                </CardContent>
-                <CardFooter className="p-3 sm:p-6">
-                    <div className="flex w-full items-center space-x-2">
-                        <Input
-                            placeholder="Ask me about your course materials..."
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={handleKeyPress}
-                            disabled={isLoading}
-                            className="text-sm sm:text-base"
-                        />
-                        <Button
-                            size="icon"
-                            onClick={handleSendMessage}
-                            disabled={isLoading || !message.trim()}
-                            className="flex-shrink-0"
-                        >
-                            <Send className="h-4 w-4" />
-                            <span className="sr-only">Send</span>
-                        </Button>
-                    </div>
-                </CardFooter>
-            </Card>
+                        </ScrollArea>
+                    </CardContent>
 
-            {showHelp && (
-                <Card className="lg:col-span-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <div>
-                            <CardTitle className="text-lg">
-                                AI Assistant Features
-                            </CardTitle>
-                            <CardDescription className="text-sm">
-                                How to get the best help
-                            </CardDescription>
+                    {/* Input Area */}
+                    <CardFooter className="border-t p-4">
+                        <div className="flex w-full items-end gap-2">
+                            <div className="flex-1">
+                                <Input
+                                    placeholder={
+                                        selectedMaterial
+                                            ? "Ask me anything about this material..."
+                                            : "Select a material first to start chatting..."
+                                    }
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    onKeyDown={handleKeyPress}
+                                    disabled={isLoading || !selectedMaterial}
+                                    className="resize-none"
+                                />
+                            </div>
+                            <Button
+                                size="icon"
+                                onClick={handleSendMessage}
+                                disabled={isLoading || !message.trim() || !selectedMaterial}
+                                className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-green-600 hover:from-blue-600 hover:to-green-700"
+                            >
+                                <Send className="h-4 w-4" />
+                                <span className="sr-only">Send</span>
+                            </Button>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowHelp(false)}
-                            className="lg:hidden"
-                        >
-                            <X className="h-4 w-4" />
-                            <span className="sr-only">Close</span>
-                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+
+            {/* Sidebar */}
+            {showSidebar && (
+                <Card className={`w-full lg:w-80 flex-shrink-0 ${showSidebar ? 'block' : 'hidden lg:block'}`}>
+                    <CardHeader className="border-b">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">Chat History & Tips</CardTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowSidebar(false)}
+                                className="lg:hidden h-8 w-8"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </CardHeader>
-                    <CardContent className="space-y-3 sm:space-y-4">
-                        <div>
-                            <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-                                <BookOpen className="h-4 w-4" />
-                                Course Materials
-                            </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                                I can answer questions based on your uploaded
-                                course materials. Select a specific course for
-                                more accurate, material-based responses.
-                            </p>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-sm sm:text-base">
-                                Smart Features
-                            </h3>
-                            <ul className="ml-4 list-disc text-xs sm:text-sm text-muted-foreground space-y-1">
-                                <li>
-                                    Source citations for all material-based
-                                    answers
-                                </li>
-                                <li>Follow-up question suggestions</li>
-                                <li>
-                                    Out-of-scope detection with fallback options
-                                </li>
-                                <li>Confidence scoring for responses</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-sm sm:text-base">
-                                Example Questions
-                            </h3>
-                            <ul className="ml-4 list-disc text-xs sm:text-sm text-muted-foreground space-y-1">
-                                <li>
-                                    Explain the concept of [topic] from my
-                                    materials
-                                </li>
-                                <li>
-                                    What are the key points about [subject]?
-                                </li>
-                                <li>Help me understand [difficult concept]</li>
-                                <li>Summarize the material on [topic]</li>
-                            </ul>
-                        </div>
+                    <CardContent className="p-4 space-y-6">
+                        {/* Recent Sessions */}
                         {sessions.length > 0 && (
                             <div>
-                                <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-                                    <Clock className="h-4 w-4" />
+                                <h3 className="font-semibold flex items-center gap-2 text-sm mb-3">
+                                    <Clock className="h-4 w-4 text-blue-500" />
                                     Recent Sessions
                                 </h3>
-                                <div className="space-y-2 max-h-24 sm:max-h-32 overflow-y-auto">
-                                    {sessions.slice(0, 5).map((session) => (
-                                        <Button
-                                            key={session.id}
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full justify-start text-left h-auto p-2"
-                                            onClick={() =>
-                                                loadSession(session.id)
-                                            }
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-medium truncate text-xs sm:text-sm">
-                                                    {session.title ||
-                                                        "Untitled Chat"}
-                                                </p>
-                                                {session.course && (
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {session.course.code}
+                                <ScrollArea className="h-48">
+                                    <div className="space-y-2">
+                                        {sessions.slice(0, 10).map((session) => (
+                                            <Button
+                                                key={session.id}
+                                                variant={currentSessionId === session.id ? "secondary" : "ghost"}
+                                                size="sm"
+                                                className="w-full justify-start text-left h-auto p-3 hover:bg-muted"
+                                                onClick={() => loadSession(session.id)}
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-medium truncate text-xs">
+                                                        {session.title || "Untitled Chat"}
                                                     </p>
-                                                )}
-                                            </div>
-                                        </Button>
-                                    ))}
-                                </div>
+                                                    {session.course && (
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            {session.course.code}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        {new Date(session.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
                             </div>
                         )}
+
+                        {/* Quick Tips */}
                         <div>
-                            <h3 className="font-semibold text-sm sm:text-base">
-                                Limitations
+                            <h3 className="font-semibold flex items-center gap-2 text-sm mb-3">
+                                <Sparkles className="h-4 w-4 text-green-500" />
+                                Quick Tips
                             </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                                Responses are based on uploaded materials. For
-                                official course information, always refer to
-                                your instructors and course guidelines.
+                            <div className="space-y-3">
+                                <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                                    <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
+                                        📖 Material-Based
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Answers come directly from your selected course material
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg">
+                                    <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+                                        🎯 Be Specific
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Ask detailed questions for better, more accurate responses
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">
+                                        ✨ Follow-ups
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Click suggested questions to dive deeper into topics
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Example Questions */}
+                        <div>
+                            <h3 className="font-semibold text-sm mb-3">Example Questions</h3>
+                            <div className="space-y-2">
+                                {[
+                                    "Explain the main concepts in this material",
+                                    "What are the key takeaways?",
+                                    "Summarize the important points",
+                                    "Help me understand [specific topic]"
+                                ].map((example, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setMessage(example)}
+                                        className="w-full text-left p-2 text-xs bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                                        disabled={!selectedMaterial}
+                                    >
+                                        {example}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="pt-4 border-t">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="text-center p-3 bg-muted rounded-lg">
+                                    <p className="text-2xl font-bold text-blue-500">
+                                        {processedMaterials.length}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Materials Ready</p>
+                                </div>
+                                <div className="text-center p-3 bg-muted rounded-lg">
+                                    <p className="text-2xl font-bold text-green-500">
+                                        {sessions.length}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Chat Sessions</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Disclaimer */}
+                        <div className="pt-4 border-t">
+                            <p className="text-xs text-muted-foreground">
+                                💡 <strong>Note:</strong> Responses are based on uploaded materials. Always verify important information with your instructors.
                             </p>
                         </div>
                     </CardContent>

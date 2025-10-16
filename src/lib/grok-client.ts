@@ -213,7 +213,7 @@ export class GrokClient {
           },
           body: JSON.stringify({
             messages: request.messages,
-            model: request.model || 'grok-beta',
+            model: request.model || 'llama-3.3-70b-versatile', // Groq's fast and capable model
             temperature: request.temperature ?? 0.7,
             max_tokens: request.max_tokens,
             stream: request.stream ?? false,

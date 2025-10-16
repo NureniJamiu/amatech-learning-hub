@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
  */
 export async function POST(req: NextRequest) {
     try {
-        const { message, courseId, sessionId, userId } = await req.json();
+        const { message, courseId, materialId, sessionId, userId } = await req.json();
 
         // Apply rate limiting for AI queries (20 queries per hour per user)
         const rateLimitResponse = await applyAIQueryRateLimit(req, userId);
@@ -91,10 +91,11 @@ export async function POST(req: NextRequest) {
         const grokRagPipeline = getGrokRAGPipeline();
 
         // Process query with Grok RAG pipeline
+        // Use materialId if provided, otherwise fall back to courseId
         const ragResult = await grokRagPipeline.queryWithHistory(
             message,
             chatHistory,
-            courseId || undefined
+            materialId || courseId || undefined
         );
 
         // Save AI response with source citations

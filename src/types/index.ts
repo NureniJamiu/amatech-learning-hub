@@ -37,7 +37,14 @@ export type Material2 = {
     title: string;
     fileUrl: string;
     fileType: string;
+    courseId: string;
     createdAt: string; // or Date if you parse it
+    processed: boolean;
+    processingStatus: string;
+    processingError?: string;
+    chunksCount: number;
+    processingStartedAt?: string;
+    processingCompletedAt?: string;
     course: {
         code: string;
         title: string;
