@@ -75,9 +75,15 @@ export const generateAuthToken = async (userId: string): Promise<string> => {
     return `${data}.${signature}`;
 };
 
+export interface TokenVerificationResult {
+    userId: string;
+    exp?: number;
+    iat?: number;
+}
+
 export const verifyAuthToken = async (
     token: string
-): Promise<{ userId: string } | null> => {
+): Promise<TokenVerificationResult | null> => {
     try {
         const jwtSecret = getJwtSecret();
 
@@ -104,8 +110,32 @@ export const verifyAuthToken = async (
             return null;
         }
 
-        return { userId: payload.userId };
+        return { 
+            userId: payload.userId,
+            exp: payload.exp,
+            iat: payload.iat
+        };
     } catch (error) {
         return null;
+    }
+};
+
+/**
+ * Check if a token is expired without full verification
+ * Useful for determining error type
+ */
+export const isTokenExpired = (token: string): boolean => {
+    try {
+        const parts = token.split(".");
+        if (parts.length !== 3) {
+            return false;
+        }
+
+        const payload = JSON.parse(base64UrlDecode(parts[1]));
+        const now = Math.floor(Date.now() / 1000);
+        
+        return payload.exp && payload.exp < now;
+    } catch {
+        return false;
     }
 };
