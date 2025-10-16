@@ -15,11 +15,11 @@ const envSchema = z.object({
   // Authentication
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
   
-  // Grok API (Primary AI provider)
+  // Grok API (Primary AI provider - using Groq)
   GROK_API_KEY: z.string()
     .startsWith('gsk_', 'GROK_API_KEY must start with "gsk_"')
     .min(10, 'GROK_API_KEY appears to be invalid'),
-  GROK_API_BASE_URL: z.string().url('GROK_API_BASE_URL must be a valid URL').default('https://api.x.ai/v1'),
+  GROK_API_BASE_URL: z.string().url('GROK_API_BASE_URL must be a valid URL').default('https://api.groq.com/openai/v1'),
   
   // Cloudinary (File storage)
   CLOUDINARY_CLOUD_NAME: z.string().min(1, 'CLOUDINARY_CLOUD_NAME is required'),
@@ -127,7 +127,7 @@ const SENSITIVE_KEYS = [
  * Patterns for sensitive data in strings
  */
 const SENSITIVE_PATTERNS = [
-  /xai-[a-zA-Z0-9]+/gi, // Grok API keys
+  /gsk_[a-zA-Z0-9]+/gi, // Grok API keys
   /sk-[a-zA-Z0-9]+/gi, // OpenAI API keys
   /Bearer\s+[a-zA-Z0-9\-._~+/]+=*/gi, // Bearer tokens
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, // Email addresses (optional)

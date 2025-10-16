@@ -53,7 +53,7 @@ async function verifySignature(
     }
 }
 
-export const generateAuthToken = async (userId: string): Promise<string> => {
+export const generateAuthToken = async (userId: string, isAdmin: boolean = false): Promise<string> => {
     const header = {
         alg: "HS256",
         typ: "JWT",
@@ -62,6 +62,7 @@ export const generateAuthToken = async (userId: string): Promise<string> => {
     const now = Math.floor(Date.now() / 1000);
     const payload = {
         userId,
+        isAdmin,
         iat: now,
         exp: now + 15 * 24 * 60 * 60, // 15 days
     };
@@ -77,6 +78,7 @@ export const generateAuthToken = async (userId: string): Promise<string> => {
 
 export interface TokenVerificationResult {
     userId: string;
+    isAdmin?: boolean;
     exp?: number;
     iat?: number;
 }
@@ -112,6 +114,7 @@ export const verifyAuthToken = async (
 
         return { 
             userId: payload.userId,
+            isAdmin: payload.isAdmin,
             exp: payload.exp,
             iat: payload.iat
         };

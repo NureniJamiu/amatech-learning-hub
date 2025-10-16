@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const courseId = searchParams.get("courseId") || undefined;
         const search = searchParams.get("search") || undefined;
-        
+
         // Parse pagination parameters using utility
         const { parseOffsetPagination, buildOffsetQuery, processOffsetResults } = await import('@/lib/pagination');
         const paginationParams = parseOffsetPagination(searchParams);

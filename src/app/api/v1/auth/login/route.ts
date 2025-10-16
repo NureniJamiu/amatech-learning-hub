@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     // Reset failed attempts on successful login
     await resetFailedAuthAttempts(req);
 
-    const token = await generateAuthToken(user.id);
+    const token = await generateAuthToken(user.id, user.isAdmin);
     console.log("Token generated successfully");
     console.log("Token length:", token?.length);
     console.log("Token preview:", token?.substring(0, 20) + "...");

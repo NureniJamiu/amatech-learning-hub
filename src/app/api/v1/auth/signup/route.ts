@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const token = await generateAuthToken(user.id);
+    const token = await generateAuthToken(user.id, user.isAdmin);
 
     const response = NextResponse.json(
       {

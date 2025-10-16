@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAuthToken } from "@/utils/token";
-import { MaintenanceMode } from "@/lib/maintenance-mode";
 
 /**
  * Base64 URL decode helper (for token inspection)
@@ -172,14 +171,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Check maintenance mode (before authentication)
+    // Check maintenance mode via environment variable (before authentication)
     // Allow health check and maintenance page during maintenance
     const isMaintenanceExempt = maintenanceExemptRoutes.some((route) => 
         pathname.startsWith(route)
     );
 
     if (!isMaintenanceExempt) {
-        const maintenanceEnabled = await MaintenanceMode.isEnabled();
+        // Check if maintenance mode is enabled via environment variable
+        // This avoids database calls in Edge Runtime
+        const maintenanceEnabled = process.env.MAINTENANCE_MODE === 'true';
         
         if (maintenanceEnabled) {
             // Extract token to check if user is admin
@@ -190,8 +191,8 @@ export async function middleware(request: NextRequest) {
                 try {
                     const decoded = await verifyAuthToken(token);
                     if (decoded) {
-                        // Check if user is admin
-                        isAdmin = await MaintenanceMode.isUserAllowed(decoded.userId);
+                        // Check the isAdmin flag from the JWT token
+                        isAdmin = decoded.isAdmin === true;
                     }
                 } catch (error) {
                     // Token verification failed, user is not admin

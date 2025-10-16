@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     FileText,
     FileUp,
@@ -37,6 +37,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Pagination } from "@/components/ui/pagination";
 import {
     Dialog,
     DialogContent,
@@ -74,6 +75,11 @@ import {
 } from "@/components/ui/form-layout";
 import { FileUploadZone, FilePreview } from "@/components/ui/file-upload-zone";
 import FileUploader from "../file-uploader";
+import {
+    TableFilters,
+    type FilterOption,
+    type ActiveFilter,
+} from "@/components/ui/table-filters";
 import { useCourses } from "@/hooks/use-courses";
 import { MaterialInput } from "@/hooks/use-materials";
 import type { Material2 } from "@/types";
@@ -100,6 +106,13 @@ export function ContentManagement() {
     const [openDeleteDialogs, setOpenDeleteDialogs] = useState<Set<string>>(
         new Set()
     );
+    const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+    const [materialSearchQuery, setMaterialSearchQuery] = useState("");
+    const [pastQuestionSearchQuery, setPastQuestionSearchQuery] = useState("");
+    const [materialPage, setMaterialPage] = useState(1);
+    const [materialItemsPerPage, setMaterialItemsPerPage] = useState(10);
+    const [pastQuestionPage, setPastQuestionPage] = useState(1);
+    const [pastQuestionItemsPerPage, setPastQuestionItemsPerPage] = useState(10);
     const [formData, setFormData] = useState<{
         title: string;
         courseId: string;
@@ -122,6 +135,56 @@ export function ContentManagement() {
     const { trackMaterialAccess, trackPastQuestionAccess } =
         useRecentlyAccessed();
 
+    // Poll for material processing status
+    const pollProcessingStatus = async (materialId: string, materialTitle: string) => {
+        const maxAttempts = 30; // Poll for up to 5 minutes (30 * 10 seconds)
+        let attempts = 0;
+
+        const checkStatus = async () => {
+            try {
+                const response = await fetch(`/api/v1/materials/process?materialId=${materialId}`);
+                if (!response.ok) return;
+
+                const data = await response.json();
+                
+                if (data.material?.processingStatus === 'completed') {
+                    toast.success(`✨ AI processing completed for "${materialTitle}"`, {
+                        position: "top-right",
+                        autoClose: 5000,
+                    });
+                    // Refresh materials list
+                    queryClient.invalidateQueries({ queryKey: ["materials"] });
+                    return true;
+                } else if (data.material?.processingStatus === 'failed') {
+                    toast.error(`AI processing failed for "${materialTitle}". You can retry later.`, {
+                        position: "top-right",
+                        autoClose: 5000,
+                    });
+                    return true;
+                }
+                
+                return false;
+            } catch (error) {
+                console.error('Error checking processing status:', error);
+                return false;
+            }
+        };
+
+        const poll = async () => {
+            attempts++;
+            const completed = await checkStatus();
+            
+            if (!completed && attempts < maxAttempts) {
+                setTimeout(poll, 10000); // Check every 10 seconds
+            } else if (attempts >= maxAttempts) {
+                console.log('Processing status polling timed out');
+            }
+        };
+
+        // Start polling after a short delay
+        setTimeout(poll, 5000);
+    };
+
     // React Query Hooks - declare these first
     const queryClient = useQueryClient();
 
@@ -131,8 +194,9 @@ export function ContentManagement() {
         error: materialsError,
         refetch: refetchMaterials,
     } = useMaterials({
-        search: undefined,
-        limit: 50,
+        search: materialSearchQuery || undefined,
+        page: materialPage,
+        limit: materialItemsPerPage,
         courseId: undefined,
     });
 
@@ -142,8 +206,9 @@ export function ContentManagement() {
         error: pastQuestionsError,
         refetch: refetchPastQuestions,
     } = usePastQuestions({
-        search: undefined,
-        limit: 50,
+        search: pastQuestionSearchQuery || undefined,
+        page: pastQuestionPage,
+        limit: pastQuestionItemsPerPage,
     });
 
     const {
@@ -236,27 +301,47 @@ export function ContentManagement() {
                     materialData
                 );
 
-                // Automatically process the material for RAG
-                if (result && result.id) {
-                    try {
-                        await fetch("/api/v1/materials/process", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ materialId: result.id }),
-                        });
-                        console.log("Material processing started for RAG");
-                    } catch (processingError) {
-                        console.warn(
-                            "Material uploaded but RAG processing failed:",
-                            processingError
-                        );
-                    }
-                }
-
-                toast.success("Material uploaded successfully", {
+                // Show immediate success for upload
+                toast.success("Material uploaded successfully! 🎉", {
                     position: "top-right",
                     autoClose: 3000,
                 });
+
+                // Automatically process the material for RAG (async)
+                if (result && result.id) {
+                    // Show info about AI processing starting
+                    toast.info("AI processing started in background. You can continue working.", {
+                        position: "top-right",
+                        autoClose: 5000,
+                    });
+
+                    // Start async processing (don't wait)
+                    fetch("/api/v1/materials/process", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ materialId: result.id }),
+                    })
+                        .then(async (response) => {
+                            if (response.ok) {
+                                // Poll for completion status
+                                pollProcessingStatus(result.id, formData.title);
+                            } else {
+                                const error = await response.json();
+                                console.warn("Material uploaded but RAG processing failed:", error);
+                                toast.warning("Material uploaded but AI processing failed. You can retry later.", {
+                                    position: "top-right",
+                                    autoClose: 5000,
+                                });
+                            }
+                        })
+                        .catch((processingError) => {
+                            console.warn("Material uploaded but RAG processing failed:", processingError);
+                            toast.warning("Material uploaded but AI processing failed. You can retry later.", {
+                                position: "top-right",
+                                autoClose: 5000,
+                            });
+                        });
+                }
             } else {
                 await uploadPastQuestionMutation.mutateAsync(materialData);
                 toast.success("Past question uploaded successfully", {
@@ -364,6 +449,36 @@ export function ContentManagement() {
                 window.open(pastQuestion.fileUrl, "_blank");
             }
         }
+    };
+
+    // Pagination handlers for materials
+    const handleMaterialPageChange = (page: number) => {
+        setMaterialPage(page);
+    };
+
+    const handleMaterialItemsPerPageChange = (newItemsPerPage: number) => {
+        setMaterialItemsPerPage(newItemsPerPage);
+        setMaterialPage(1);
+    };
+
+    const handleMaterialSearchChange = (value: string) => {
+        setMaterialSearchQuery(value);
+        setMaterialPage(1);
+    };
+
+    // Pagination handlers for past questions
+    const handlePastQuestionPageChange = (page: number) => {
+        setPastQuestionPage(page);
+    };
+
+    const handlePastQuestionItemsPerPageChange = (newItemsPerPage: number) => {
+        setPastQuestionItemsPerPage(newItemsPerPage);
+        setPastQuestionPage(1);
+    };
+
+    const handlePastQuestionSearchChange = (value: string) => {
+        setPastQuestionSearchQuery(value);
+        setPastQuestionPage(1);
     };
 
     return (
@@ -643,6 +758,8 @@ export function ContentManagement() {
                                     <Input
                                         placeholder="Search materials..."
                                         className="pl-8"
+                                        value={materialSearchQuery}
+                                        onChange={(e) => handleMaterialSearchChange(e.target.value)}
                                     />
                                 </div>
                                 {materialsError && (
@@ -850,6 +967,18 @@ export function ContentManagement() {
                                     </Table>
                                 </div>
                             )}
+
+                            {/* Materials Pagination */}
+                            {!materialsLoading && !materialsError && totalMaterials > 0 && (
+                                <Pagination
+                                    currentPage={materialPage}
+                                    totalPages={Math.ceil(totalMaterials / materialItemsPerPage)}
+                                    totalItems={totalMaterials}
+                                    itemsPerPage={materialItemsPerPage}
+                                    onPageChange={handleMaterialPageChange}
+                                    onItemsPerPageChange={handleMaterialItemsPerPageChange}
+                                />
+                            )}
                         </TabsContent>
                         <TabsContent value="pastQuestions">
                             <div className="flex items-center py-4">
@@ -858,6 +987,8 @@ export function ContentManagement() {
                                     <Input
                                         placeholder="Search past questions..."
                                         className="pl-8"
+                                        value={pastQuestionSearchQuery}
+                                        onChange={(e) => handlePastQuestionSearchChange(e.target.value)}
                                     />
                                 </div>
                                 {pastQuestionsError && (
@@ -1067,6 +1198,18 @@ export function ContentManagement() {
                                         </TableBody>
                                     </Table>
                                 </div>
+                            )}
+
+                            {/* Past Questions Pagination */}
+                            {!pastQuestionsLoading && !pastQuestionsError && totalPastQuestions > 0 && (
+                                <Pagination
+                                    currentPage={pastQuestionPage}
+                                    totalPages={Math.ceil(totalPastQuestions / pastQuestionItemsPerPage)}
+                                    totalItems={totalPastQuestions}
+                                    itemsPerPage={pastQuestionItemsPerPage}
+                                    onPageChange={handlePastQuestionPageChange}
+                                    onItemsPerPageChange={handlePastQuestionItemsPerPageChange}
+                                />
                             )}
                         </TabsContent>
                     </Tabs>

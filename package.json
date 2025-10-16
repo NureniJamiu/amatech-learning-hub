@@ -11,7 +11,14 @@
     "seed": "tsx prisma/seed.ts",
     "queue:worker": "tsx scripts/queue-worker.ts",
     "queue:process": "tsx -e \"import { processingQueue } from './src/lib/processing-queue'; processingQueue.processNext().then(() => process.exit(0));\"",
-    "test:env": "tsx scripts/test-env-validation.ts"
+    "test:env": "tsx scripts/test-env-validation.ts",
+    "test:integration": "tsx scripts/test-integration.ts",
+    "test:api": "tsx scripts/test-api-endpoints.ts",
+    "test:grok": "tsx scripts/test-grok-connection.ts",
+    "test:groq-embeddings": "tsx --env-file=.env scripts/test-groq-embeddings.ts",
+    "test:rate-limit": "tsx scripts/verify-rate-limit-headers.ts",
+    "test:all": "tsx scripts/generate-test-report.ts",
+    "test:maintenance": "tsx scripts/test-maintenance-mode.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

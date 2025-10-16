@@ -7,7 +7,8 @@ import { CacheInvalidation } from "@/lib/cache";
 const prisma = new PrismaClient();
 
 /**
- * Process a material for RAG by extracting text and generating embeddings using Grok
+ * Process a material for RAG by extracting text and generating embeddings using Groq
+ * This endpoint starts async processing and returns immediately
  */
 export async function POST(req: Request) {
     let materialId: string | undefined;
@@ -51,12 +52,45 @@ export async function POST(req: Request) {
         // Invalidate material cache when status changes
         CacheInvalidation.invalidateMaterial(materialId);
 
-        console.log(`[Material Processing] Starting processing for material: ${material.title}`);
+        console.log(`[Material Processing] Starting async processing for material: ${material.title}`);
 
-        // Get Grok RAG pipeline instance
+        // Start async processing (don't await)
+        processMataterialAsync(material).catch(error => {
+            console.error(`[Material Processing] Async processing failed for ${material.id}:`, error);
+        });
+
+        // Return immediately
+        return NextResponse.json({
+            success: true,
+            message: "Material processing started",
+            materialId: material.id,
+            materialTitle: material.title,
+            status: "processing",
+        });
+
+    } catch (error) {
+        console.error("[Material Processing] Error:", error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : "Processing failed",
+                materialId,
+            },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * Async function to process material in the background
+ */
+async function processMataterialAsync(material: any) {
+    try {
+        // Get Groq RAG pipeline instance
         const grokRagPipeline = getGrokRAGPipeline();
 
-        // Process PDF using Grok RAG pipeline
+        // Process PDF using Groq RAG pipeline
         const result = await grokRagPipeline.processPDFForRAG(
             material.fileUrl,
             material.id,
@@ -67,74 +101,39 @@ export async function POST(req: Request) {
         if (!result.success) {
             console.error(`[Material Processing] Failed to process material: ${result.error}`);
             
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: result.error || "PDF processing failed",
-                    materialId: material.id,
+            // Update status to failed
+            await prisma.material.update({
+                where: { id: material.id },
+                data: { 
+                    processingStatus: "failed",
                 },
-                { status: 500 }
-            );
+            });
+            
+            CacheInvalidation.invalidateMaterial(material.id);
+            return;
         }
 
         console.log(`[Material Processing] Successfully processed material: ${material.title} (${result.chunksCreated} chunks)`);
 
         // Invalidate material cache after successful processing
-        CacheInvalidation.invalidateMaterial(materialId);
-
-        return NextResponse.json({
-            success: true,
-            message: "Material processed successfully using Grok",
-            chunksCreated: result.chunksCreated,
-            materialId: material.id,
-            materialTitle: material.title,
-        });
+        CacheInvalidation.invalidateMaterial(material.id);
 
     } catch (error) {
-        console.error("[Material Processing] Error:", error);
-
-        // Handle specific Grok API errors
-        let errorMessage = "Processing failed";
-        let statusCode = 500;
-
-        if (error instanceof RateLimitError) {
-            errorMessage = `Rate limit exceeded. Please try again in ${error.retryAfter || 60} seconds.`;
-            statusCode = 429;
-        } else if (error instanceof TimeoutError) {
-            errorMessage = "Request timed out. The PDF may be too large or the service is slow. Please try again.";
-            statusCode = 408;
-        } else if (error instanceof GrokAPIError) {
-            errorMessage = `Grok API error: ${error.message}`;
-            statusCode = error.statusCode || 500;
-        } else if (error instanceof Error) {
-            errorMessage = error.message;
-        }
+        console.error("[Material Processing] Async error:", error);
 
         // Update material status to failed
-        if (materialId) {
-            try {
-                await prisma.material.update({
-                    where: { id: materialId },
-                    data: { 
-                        processingStatus: "failed",
-                    },
-                });
-                
-                // Invalidate material cache when status changes
-                CacheInvalidation.invalidateMaterial(materialId);
-            } catch (updateError) {
-                console.error("[Material Processing] Failed to update material status:", updateError);
-            }
+        try {
+            await prisma.material.update({
+                where: { id: material.id },
+                data: { 
+                    processingStatus: "failed",
+                },
+            });
+            
+            CacheInvalidation.invalidateMaterial(material.id);
+        } catch (updateError) {
+            console.error("[Material Processing] Failed to update material status:", updateError);
         }
-
-        return NextResponse.json(
-            {
-                success: false,
-                error: errorMessage,
-                materialId,
-            },
-            { status: statusCode }
-        );
     }
 }
 

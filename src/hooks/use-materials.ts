@@ -212,14 +212,31 @@ export function useUploadMaterial() {
             }
             showApiError(err);
         },
+        onSuccess: (data) => {
+            // Immediately update cache with the real material data
+            if (data) {
+                queryClient.setQueriesData(
+                    { queryKey: materialKeys.lists() },
+                    (old: { materials: Material2[]; total: number } | undefined) => {
+                        if (!old) return { materials: [data], total: 1 };
+                        // Replace the optimistic material with the real one
+                        const filteredMaterials = old.materials.filter(
+                            (material) => material.id !== "temp-id"
+                        );
+                        return {
+                            materials: [data, ...filteredMaterials],
+                            total: filteredMaterials.length + 1,
+                        };
+                    }
+                );
+            }
+        },
         onSettled: (data, error, variables) => {
-            // Always refetch after error or success
+            // Invalidate queries to ensure fresh data
             queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
             queryClient.invalidateQueries({
                 queryKey: materialKeys.byCourse(variables.courseId)
             });
-            // Also invalidate infinite queries
-            queryClient.invalidateQueries({ queryKey: materialKeys.infinite({}) });
 
             // Invalidate course queries to update material counts in course objects
             queryClient.invalidateQueries({ queryKey: ["courses"] });
@@ -283,12 +300,14 @@ export function useDeleteMaterial() {
             showApiError(err);
         },
         onSettled: (data, error, materialId, context) => {
-            // Always refetch after error or success to ensure consistency
-            queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
+            // Invalidate material queries to trigger background refetch
+            queryClient.invalidateQueries({ 
+                queryKey: materialKeys.lists()
+            });
 
             // Invalidate course queries to update material counts
             queryClient.invalidateQueries({
-                queryKey: ["courses"],
+                queryKey: ["courses"]
             });
         },
     });

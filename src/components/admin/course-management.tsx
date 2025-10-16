@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     Edit,
     MoreHorizontal,
@@ -74,6 +74,12 @@ import {
     FormGrid,
     FormActions,
 } from "@/components/ui/form-layout";
+import {
+    TableFilters,
+    type FilterOption,
+    type ActiveFilter,
+} from "@/components/ui/table-filters";
+import { Pagination } from "@/components/ui/pagination";
 
 // Import your hooks
 import {
@@ -89,6 +95,9 @@ export function CourseManagement() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<string | null>(null);
+    const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [formData, setFormData] = useState<CourseInput>({
         code: "",
         title: "",
@@ -107,7 +116,8 @@ export function CourseManagement() {
         refetch,
     } = useCourses({
         search: searchQuery || undefined,
-        limit: 50,
+        page: currentPage,
+        limit: itemsPerPage,
     });
 
     const { data: tutorsResponse } = useTutors({
@@ -129,6 +139,143 @@ export function CourseManagement() {
         value: tutor.id,
         label: `${tutor.name}`,
     }));
+
+    // Define filter options
+    const filterOptions: FilterOption[] = useMemo(
+        () => [
+            {
+                id: "level",
+                label: "Level",
+                type: "select",
+                options: [
+                    { value: "100", label: "100 Level" },
+                    { value: "200", label: "200 Level" },
+                    { value: "300", label: "300 Level" },
+                    { value: "400", label: "400 Level" },
+                    { value: "500", label: "500 Level" },
+                ],
+            },
+            {
+                id: "semester",
+                label: "Semester",
+                type: "select",
+                options: [
+                    { value: "1", label: "1st Semester" },
+                    { value: "2", label: "2nd Semester" },
+                ],
+            },
+            {
+                id: "units",
+                label: "Credit Units",
+                type: "select",
+                options: [
+                    { value: "1", label: "1 Unit" },
+                    { value: "2", label: "2 Units" },
+                    { value: "3", label: "3 Units" },
+                    { value: "4", label: "4 Units" },
+                    { value: "5", label: "5 Units" },
+                    { value: "6", label: "6 Units" },
+                ],
+            },
+            {
+                id: "tutor",
+                label: "Tutor",
+                type: "select",
+                options: tutors.map((tutor) => ({
+                    value: tutor.id,
+                    label: tutor.name,
+                })),
+            },
+        ],
+        [tutors]
+    );
+
+    // Filter courses based on active filters and search query
+    const filteredCourses = useMemo(() => {
+        let filtered = courses;
+
+        // Apply search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(
+                (course) =>
+                    course.code.toLowerCase().includes(query) ||
+                    course.title.toLowerCase().includes(query)
+            );
+        }
+
+        // Apply active filters
+        activeFilters.forEach((filter) => {
+            if (filter.filterId === "level") {
+                filtered = filtered.filter(
+                    (course) => course.level.toString() === filter.value
+                );
+            } else if (filter.filterId === "semester") {
+                filtered = filtered.filter(
+                    (course) => course.semester.toString() === filter.value
+                );
+            } else if (filter.filterId === "units") {
+                filtered = filtered.filter(
+                    (course) => course.units.toString() === filter.value
+                );
+            } else if (filter.filterId === "tutor") {
+                filtered = filtered.filter((course) =>
+                    course.tutors.some((tutor: any) => tutor.id === filter.value)
+                );
+            }
+        });
+
+        return filtered;
+    }, [courses, searchQuery, activeFilters]);
+
+    // Handle filter changes
+    const handleFilterChange = (
+        filterId: string,
+        value: string | string[] | null
+    ) => {
+        if (value === null) {
+            // Remove filter
+            setActiveFilters((prev) =>
+                prev.filter((f) => f.filterId !== filterId)
+            );
+        } else {
+            // Add or update filter
+            const filterOption = filterOptions.find((f) => f.id === filterId);
+            const label = filterOption?.label || filterId;
+
+            setActiveFilters((prev) => {
+                const existing = prev.find((f) => f.filterId === filterId);
+                if (existing) {
+                    return prev.map((f) =>
+                        f.filterId === filterId ? { ...f, value, label } : f
+                    );
+                }
+                return [...prev, { filterId, value, label }];
+            });
+        }
+    };
+
+    const handleClearAllFilters = () => {
+        setActiveFilters([]);
+        setCurrentPage(1); // Reset to first page when clearing filters
+    };
+
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
+
+    // Reset to first page when search query changes
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
 
     // Handle form submission for creating/updating courses
     const handleSubmit = async (e: React.FormEvent) => {
@@ -439,26 +586,33 @@ export function CourseManagement() {
                 </Dialog>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center py-4">
-                    <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search courses..."
-                            className="pl-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 py-4">
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search courses..."
+                                className="pl-8"
+                                value={searchQuery}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                            />
+                        </div>
+                        <TableFilters
+                            filters={filterOptions}
+                            activeFilters={activeFilters}
+                            onFilterChange={handleFilterChange}
+                            onClearAll={handleClearAllFilters}
                         />
+                        {error && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => refetch()}
+                            >
+                                Retry
+                            </Button>
+                        )}
                     </div>
-                    {error && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => refetch()}
-                            className="ml-2"
-                        >
-                            Retry
-                        </Button>
-                    )}
                 </div>
 
                 {/* Error State */}
@@ -494,19 +648,19 @@ export function CourseManagement() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {courses.length === 0 ? (
+                                {filteredCourses.length === 0 ? (
                                     <TableRow>
                                         <TableCell
                                             colSpan={7}
                                             className="text-center py-8 text-muted-foreground"
                                         >
-                                            {searchQuery
-                                                ? "No courses found matching your search."
+                                            {searchQuery || activeFilters.length > 0
+                                                ? "No courses found matching your filters."
                                                 : "No courses found. Add one to get started."}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    courses.map((course) => (
+                                    filteredCourses.map((course) => (
                                         <TableRow key={course.id}>
                                             <TableCell className="font-medium">
                                                 {course.code}
@@ -665,6 +819,18 @@ export function CourseManagement() {
                             </TableBody>
                         </Table>
                     </div>
+                )}
+
+                {/* Pagination */}
+                {!isLoading && !error && totalCourses > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(totalCourses / itemsPerPage)}
+                        totalItems={totalCourses}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={handlePageChange}
+                        onItemsPerPageChange={handleItemsPerPageChange}
+                    />
                 )}
             </CardContent>
         </Card>

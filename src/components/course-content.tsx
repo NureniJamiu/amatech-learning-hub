@@ -16,7 +16,7 @@ import { useRecentlyAccessed } from "@/hooks/use-recently-accessed";
 const LOCAL_PDF_PATH = "/pdfs/stakeholders.pdf";
 
 export function CourseContent() {
-    const { selectedCourse, setSelectedCourse } = useAppContext();
+    const { selectedCourse, setSelectedCourse, refreshCourses } = useAppContext();
     const { trackMaterialAccess, trackPastQuestionAccess } =
         useRecentlyAccessed();
     const [viewingPdf, setViewingPdf] = useState<

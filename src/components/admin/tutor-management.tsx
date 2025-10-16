@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // import { useToast } from "@/components/ui/use-toast";
 import FileUploader from "../file-uploader";
+import { Pagination } from "@/components/ui/pagination";
 
 // Import your hooks
 import {
@@ -64,6 +65,8 @@ export function TutorManagement() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingTutor, setEditingTutor] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [formData, setFormData] = useState<TutorInput>({
         name: "",
         email: "",
@@ -80,7 +83,8 @@ export function TutorManagement() {
         refetch,
     } = useTutors({
         search: searchQuery || undefined,
-        limit: 50,
+        page: currentPage,
+        limit: itemsPerPage,
     });
 
     const createTutorMutation = useCreateTutor();
@@ -172,6 +176,23 @@ export function TutorManagement() {
         setIsCreateDialogOpen(false);
         setEditingTutor(null);
         setFormData({ name: "", email: "", avatar: "" });
+    };
+
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
+    };
+
+    // Reset to first page when search query changes
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
     };
 
     return (
@@ -305,7 +326,7 @@ export function TutorManagement() {
                             placeholder="Search tutors..."
                             className="pl-8"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => handleSearchChange(e.target.value)}
                         />
                     </div>
                     {error && (
@@ -480,6 +501,18 @@ export function TutorManagement() {
                             </TableBody>
                         </Table>
                     </div>
+                )}
+
+                {/* Pagination */}
+                {!isLoading && !error && totalTutors > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(totalTutors / itemsPerPage)}
+                        totalItems={totalTutors}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={handlePageChange}
+                        onItemsPerPageChange={handleItemsPerPageChange}
+                    />
                 )}
             </CardContent>
         </Card>

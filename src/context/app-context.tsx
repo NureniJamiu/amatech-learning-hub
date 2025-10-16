@@ -27,6 +27,7 @@ type AppContextType = {
     currentUser: any;
     activeAdminSection: string;
     setActiveAdminSection: (section: string) => void;
+    refreshCourses: () => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -101,6 +102,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         );
     }
 
+    // Function to refresh courses
+    const refreshCourses = () => {
+        coursesQuery.refetch();
+    };
+
     return (
         <AppContext.Provider
             value={{
@@ -119,6 +125,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 currentUser,
                 activeAdminSection,
                 setActiveAdminSection,
+                refreshCourses,
             }}
         >
             {children}
